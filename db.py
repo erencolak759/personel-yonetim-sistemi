@@ -2,10 +2,11 @@ import pymysql
 
 def get_connection():
     connection = pymysql.connect(
-        host="localhost",
+        host="shuttle.proxy.rlwy.net",
         user="root",
-        password="",
-        database="maas_takip", # Veritabanı adın neyse onu yaz
+        password="WEwqlRAGrnTNiVoIiNZPzbhZeAGBSxIm",
+        database="railway",
+        port=30001,
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor
     )
