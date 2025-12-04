@@ -2,76 +2,134 @@
 
 {% block content %}
 
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card bg-primary text-white border-0 shadow-sm">
-            <div class="card-body p-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="text-white-50 text-uppercase mb-2">Bu Ay Ödenecek Toplam Maaş</h6>
-                    <h2 class="fw-bold mb-0 display-6">₺ 145,250.00</h2> 
-                </div>
-                <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                    <i class="fas fa-wallet fa-2x"></i>
-                </div>
+<div class="printable-area">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark">Maaş Bordrosu</h2>
+            <p class="text-muted small mb-0 d-none d-print-block">Rapor Tarihi: <span id="printDate"></span></p>
+        </div>
+        
+        <button onclick="window.print()" class="btn btn-outline-primary rounded-pill px-4 no-print">
+            <i class="fas fa-print me-2"></i> PDF / Yazdır
+        </button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Dönem</th>
+                            <th>Personel</th>
+                            <th>Brüt Maaş</th>
+                            <th>Eklemeler</th>
+                            <th>Kesintiler</th>
+                            <th>Net Ödenen</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in maaslar %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-muted">{{ m.donem_ay }}/{{ m.donem_yil }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2 bg-info bg-opacity-10 text-info fw-bold small">
+                                        {{ m.ad[0] }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ m.ad }} {{ m.soyad }}</div>
+                                        <small class="text-muted">{{ m.departman_adi or '-' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ m.brut_maas }} ₺</td>
+                            <td class="text-success">+{{ m.toplam_ekleme }} ₺</td>
+                            <td class="text-danger">-{{ m.toplam_kesinti }} ₺</td>
+                            <td class="fw-bold text-dark fs-5">{{ m.net_maas }} ₺</td>
+                            <td>
+                                {% if m.odendi_mi == 1 %}
+                                    <span class="badge bg-success bg-opacity-10 text-success px-3 border-print">Ödendi</span>
+                                {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-warning px-3 border-print">Bekliyor</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+
+            {% if not maaslar %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-file-invoice-dollar fa-3x mb-3 opacity-25"></i>
+                <p>Kayıtlı maaş bordrosu bulunamadı.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
+
 </div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-        <h5 class="mb-0 fw-bold">Maaş Listesi</h5>
-        
-        <div class="d-flex gap-2">
-            <select class="form-select form-select-sm shadow-none bg-light border-0" style="width: 150px;">
-                <option>Aralık 2025</option>
-                <option>Kasım 2025</option>
-            </select>
-            <button class="btn btn-sm btn-light text-primary"><i class="fas fa-print"></i> Yazdır</button>
-        </div>
-    </div>
-    
-    <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4 border-0 text-secondary">Personel</th>
-                    <th class="border-0 text-secondary">Brüt Maaş</th>
-                    <th class="border-0 text-secondary">Çalışılan Gün</th>
-                    <th class="border-0 text-secondary">Kesintiler</th>
-                    <th class="pe-4 border-0 text-secondary text-end">Net Maaş</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in personeller %}
-                <tr>
-                    <td class="ps-4">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-circle me-3 bg-info bg-opacity-10 text-info fw-bold">
-                                {{ p.ad[0] }}
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold text-dark">{{ p.ad }} {{ p.soyad }}</h6>
-                                <small class="text-muted">{{ p.departman_adi }}</small>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="text-muted">{{ p.maas }} ₺</td>
-                    <td>
-                        <span class="badge bg-light text-dark border">22 Gün</span>
-                    </td>
-                    <td class="text-danger small">-0.00 ₺</td>
-                    <td class="pe-4 text-end fw-bold text-success fs-5">
-                        {{ p.maas }} ₺ </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<script>
+    document.getElementById('printDate').innerText = new Date().toLocaleDateString('tr-TR');
+</script>
 
 <style>
-    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .avatar-circle { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+    /* --- YAZDIRMA AYARLARI (PDF GÖRÜNÜMÜ) --- */
+    @media print {
+        /* 1. Sayfanın geri kalanını gizle (Navbar, Sidebar vs.) */
+        body * {
+            visibility: hidden;
+        }
+
+        /* 2. Sadece bizim printable-area'yı göster */
+        .printable-area, .printable-area * {
+            visibility: visible;
+        }
+
+        /* 3. İçeriği sayfanın en tepesine taşı */
+        .printable-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+
+        /* 4. Yazdır butonunu ve diğer gereksizleri gizle */
+        .no-print, .btn {
+            display: none !important;
+        }
+
+        /* 5. Kartların gölgesini ve kenarlığını kaldır (Mürekkep tasarrufu ve temiz görünüm) */
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* 6. Tablo başlıklarını belirginleştir */
+        thead th {
+            background-color: #f0f0f0 !important;
+            color: #000 !important;
+            -webkit-print-color-adjust: exact; /* Renkleri zorla yazdır */
+        }
+
+        /* 7. Rozetlerin (Badge) etrafına çerçeve çiz (Arka plan rengi çıkmazsa diye) */
+        .border-print {
+            border: 1px solid #000;
+            color: #000 !important;
+        }
+        
+        /* 8. Linklerin altını çizmeyi ve mavi yapmayı engelle */
+        a {
+            text-decoration: none !important;
+            color: #000 !important;
+        }
+    }
 </style>
 
 {% endblock %}

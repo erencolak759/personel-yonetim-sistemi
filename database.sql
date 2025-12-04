@@ -146,4 +146,3 @@ INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, ise
 -- Ahmet ve Ayşe'yi pozisyonlarına atayalım
 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi) VALUES
 (1, 1, '2020-01-10', TRUE),
-(2, 2, '2019-03-15', TRUE);
