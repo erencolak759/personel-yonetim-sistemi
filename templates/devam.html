@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-1">Günlük Yoklama</h2>
+        <p class="text-muted mb-0">Bugünkü personel katılım durumunu işaretleyin.</p>
+    </div>
+    <div class="bg-white p-2 rounded-pill shadow-sm border">
+        <input type="date" class="form-control border-0 bg-transparent py-1" value="{{ bugun }}"> 
+        </div>
+</div>
+
+<form method="POST" action="/devam_kaydet">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 text-secondary">Personel</th>
+                            <th class="text-secondary">Departman</th>
+                            <th class="text-secondary text-center">Durum Seçimi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in personeller %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-3 bg-warning bg-opacity-10 text-warning fw-bold">
+                                        {{ p.ad[0] }}
+                                    </div>
+                                    <div class="fw-bold text-dark">{{ p.ad }} {{ p.soyad }}</div>
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ p.departman_adi }}</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    
+                                    <input type="radio" class="btn-check" name="durum_{{ p.personel_id }}" id="var_{{ p.personel_id }}" value="var" checked>
+                                    <label class="btn btn-outline-success btn-sm px-3" for="var_{{ p.personel_id }}">
+                                        <i class="fas fa-check"></i> Var
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="durum_{{ p.personel_id }}" id="izin_{{ p.personel_id }}" value="izinli">
+                                    <label class="btn btn-outline-warning btn-sm px-3" for="izin_{{ p.personel_id }}">
+                                        <i class="fas fa-clock"></i> İzinli
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="durum_{{ p.personel_id }}" id="yok_{{ p.personel_id }}" value="yok">
+                                    <label class="btn btn-outline-danger btn-sm px-3" for="yok_{{ p.personel_id }}">
+                                        <i class="fas fa-times"></i> Yok
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white border-0 p-3 text-end">
+            <button type="submit" class="btn btn-primary px-5 rounded-pill shadow-sm">
+                <i class="fas fa-save me-2"></i> Yoklamayı Kaydet
+            </button>
+        </div>
+    </div>
+</form>
+
+<style>
+    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+</style>
+
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-primary text-white border-0 shadow-sm">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-white-50 text-uppercase mb-2">Bu Ay Ödenecek Toplam Maaş</h6>
+                    <h2 class="fw-bold mb-0 display-6">₺ 145,250.00</h2> 
+                </div>
+                <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                    <i class="fas fa-wallet fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">Maaş Listesi</h5>
+        
+        <div class="d-flex gap-2">
+            <select class="form-select form-select-sm shadow-none bg-light border-0" style="width: 150px;">
+                <option>Aralık 2025</option>
+                <option>Kasım 2025</option>
+            </select>
+            <button class="btn btn-sm btn-light text-primary"><i class="fas fa-print"></i> Yazdır</button>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 border-0 text-secondary">Personel</th>
+                    <th class="border-0 text-secondary">Brüt Maaş</th>
+                    <th class="border-0 text-secondary">Çalışılan Gün</th>
+                    <th class="border-0 text-secondary">Kesintiler</th>
+                    <th class="pe-4 border-0 text-secondary text-end">Net Maaş</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in personeller %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle me-3 bg-info bg-opacity-10 text-info fw-bold">
+                                {{ p.ad[0] }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">{{ p.ad }} {{ p.soyad }}</h6>
+                                <small class="text-muted">{{ p.departman_adi }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ p.maas }} ₺</td>
+                    <td>
+                        <span class="badge bg-light text-dark border">22 Gün</span>
+                    </td>
+                    <td class="text-danger small">-0.00 ₺</td>
+                    <td class="pe-4 text-end fw-bold text-success fs-5">
+                        {{ p.maas }} ₺ </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .avatar-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+</style>
+
+{% endblock %}

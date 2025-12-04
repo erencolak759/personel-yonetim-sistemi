@@ -2,55 +2,90 @@
 
 {% block content %}
 
-<h2 class="mb-4">Maaş & Devam Yönetim Sistemi</h2>
-<p>Bu panel üzerinden personel, devam ve maaş işlemlerini yönetebilirsiniz.</p>
-
-<div class="row mt-4">
-
-  <div class="col-md-4 mb-3">
-    <div class="card shadow">
-      <div class="card-body">
-        <h5 class="card-title">Personel Listesi</h5>
-        <p class="card-text">Tüm personelleri görüntüle</p>
-        <a href="/personel" class="btn btn-primary">Git</a>
-      </div>
+<div class="p-5 mb-4 bg-light rounded-3 border shadow-sm">
+    <div class="container-fluid py-2">
+        <h1 class="display-5 fw-bold text-primary">
+            <i class="fas fa-chart-line me-2"></i> Yönetim Paneli
+        </h1>
+        <p class="col-md-8 fs-5 text-muted">
+            Personel, devam durumu, izinler ve maaş işlemlerini tek bir noktadan yönetin.
+        </p>
     </div>
-  </div>
+</div>
 
-  <div class="col-md-4 mb-3">
-    <div class="card shadow">
-      <div class="card-body">
-        <h5 class="card-title">Personel Ekle</h5>
-        <p class="card-text">Yeni personel kaydı oluştur</p>
-        <a href="/personel_ekle" class="btn btn-success">Git</a>
-      </div>
-    </div>
-  </div>
+<div class="row g-4">
 
-  <div class="col-md-4 mb-3">
-    <div class="card shadow">
-      <div class="card-body">
-        <h5 class="card-title">Devam Kayıtları</h5>
-        <p class="card-text">Günlük devam kontrolü</p>
-        <a href="#" class="btn btn-warning">Yakında</a>
-      </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-3 mx-auto">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+                <h5 class="card-title fw-bold">Personel Listesi</h5>
+                <p class="card-text text-muted small">Tüm çalışanları görüntüle.</p>
+                <a href="/personel" class="btn btn-outline-primary w-100 rounded-pill stretched-link">Git</a>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle bg-success bg-opacity-10 text-success mb-3 mx-auto">
+                    <i class="fas fa-user-plus fa-2x"></i>
+                </div>
+                <h5 class="card-title fw-bold">Personel Ekle</h5>
+                <p class="card-text text-muted small">Yeni kayıt oluştur.</p>
+                <a href="/personel_ekle" class="btn btn-outline-success w-100 rounded-pill stretched-link">Git</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle bg-warning bg-opacity-10 text-warning mb-3 mx-auto">
+                    <i class="fas fa-calendar-check fa-2x"></i>
+                </div>
+                <h5 class="card-title fw-bold">Devam Kayıtları</h5>
+                <p class="card-text text-muted small">Günlük yoklama işlemleri.</p>
+                <a href="/devam" class="btn btn-outline-warning w-100 rounded-pill stretched-link">Git</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle bg-secondary bg-opacity-10 text-secondary mb-3 mx-auto">
+                    <i class="fas fa-suitcase-rolling fa-2x"></i>
+                </div>
+                <h5 class="card-title fw-bold">İzin Yönetimi</h5>
+                <p class="card-text text-muted small">İzin talepleri ve geçmiş izinler.</p>
+                <a href="/izin" class="btn btn-outline-secondary w-100 rounded-pill stretched-link">Git</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle bg-info bg-opacity-10 text-info mb-3 mx-auto">
+                    <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                </div>
+                <h5 class="card-title fw-bold">Maaş Bordrosu</h5>
+                <p class="card-text text-muted small">Aylık maaş hesaplamaları.</p>
+                <a href="/maas" class="btn btn-outline-info w-100 rounded-pill stretched-link">Git</a>
+            </div>
+        </div>
+    </div>
 
 </div>
 
-<div class="row mt-4">
-
-  <div class="col-md-4 mb-3">
-    <div class="card shadow">
-      <div class="card-body">
-        <h5 class="card-title">Maaş Listesi</h5>
-        <p class="card-text">Aylık maaş kayıtlarını gör</p>
-        <a href="#" class="btn btn-info">Yakında</a>
-      </div>
-    </div>
-  </div>
-
-</div>
+<style>
+    .hover-card { transition: transform 0.3s ease; }
+    .hover-card:hover { transform: translateY(-5px); }
+    .icon-circle { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+</style>
 
 {% endblock %}

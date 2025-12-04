@@ -4,9 +4,9 @@ def get_connection():
     connection = pymysql.connect(
         host="localhost",
         user="root",
-        password="",          # şifren varsa buraya yaz
-        database="maas_takip",
+        password="",
+        database="maas_takip", # Veritabanı adın neyse onu yaz
         charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor  # SÖZLÜK şeklinde veri döndürsün
+        cursorclass=pymysql.cursors.DictCursor
     )
     return connection
