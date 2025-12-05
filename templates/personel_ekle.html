@@ -8,6 +8,15 @@
                 <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Yeni Personel Kaydı</h5>
             </div>
             <div class="card-body p-5">
+                <!-- Flash Mesajları Gösterme -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
                 <form method="post" action="{{ url_for('personel_ekle') }}" class="row g-3">
                     
                     <h6 class="text-success border-bottom pb-2">1. Kimlik Bilgileri</h6>
@@ -40,6 +49,7 @@
                     <h6 class="text-success border-bottom pb-2 mt-4">2. Görev ve Departman Bilgileri</h6>
                     <div class="col-md-4">
                         <label class="form-label fw-bold small">İşe Giriş Tarihi</label>
+                        <!-- 'ise_giris_tarihi' name alanı Python'daki request.form.get ile aynı olmalı -->
                         <input type="date" name="ise_giris_tarihi" class="form-control" required>
                     </div>
                     <div class="col-md-4">

@@ -1,6 +1,7 @@
+USE railway;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Önce temizlik: Eski tabloları siliyoruz
+-- TEMİZLİK
 DROP TABLE IF EXISTS Maas_Detay;
 DROP TABLE IF EXISTS Maas_Hesap;
 DROP TABLE IF EXISTS Maas_Bileseni;
@@ -14,7 +15,7 @@ DROP TABLE IF EXISTS Departman;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- 1. Departman Tablosu
+-- 1. Departman
 CREATE TABLE Departman (
     departman_id INT PRIMARY KEY AUTO_INCREMENT,
     departman_adi VARCHAR(100) NOT NULL,
@@ -22,7 +23,7 @@ CREATE TABLE Departman (
     olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Personel Tablosu
+-- 2. Personel
 CREATE TABLE Personel (
     personel_id INT PRIMARY KEY AUTO_INCREMENT,
     tc_kimlik_no CHAR(11) UNIQUE NOT NULL,
@@ -38,7 +39,7 @@ CREATE TABLE Personel (
     FOREIGN KEY (departman_id) REFERENCES Departman(departman_id)
 );
 
--- 3. Pozisyon Tablosu
+-- 3. Pozisyon
 CREATE TABLE Pozisyon (
     pozisyon_id INT PRIMARY KEY AUTO_INCREMENT,
     pozisyon_adi VARCHAR(100) NOT NULL,
@@ -47,7 +48,7 @@ CREATE TABLE Pozisyon (
     FOREIGN KEY (departman_id) REFERENCES Departman(departman_id)
 );
 
--- 4. Personel-Pozisyon İlişki Tablosu
+-- 4. Personel-Pozisyon İlişkisi
 CREATE TABLE Personel_Pozisyon (
     personel_pozisyon_id INT PRIMARY KEY AUTO_INCREMENT,
     personel_id INT NOT NULL,
@@ -59,7 +60,7 @@ CREATE TABLE Personel_Pozisyon (
     FOREIGN KEY (pozisyon_id) REFERENCES Pozisyon(pozisyon_id)
 );
 
--- 5. Devam Tablosu
+-- 5. Devam (Yoklama)
 CREATE TABLE Devam (
     devam_id INT PRIMARY KEY AUTO_INCREMENT,
     personel_id INT NOT NULL,
@@ -72,7 +73,7 @@ CREATE TABLE Devam (
     UNIQUE KEY unique_personel_tarih (personel_id, tarih)
 );
 
--- 6. İzin Türleri Tablosu
+-- 6. İzin Türleri
 CREATE TABLE Izin_Turu (
     izin_turu_id INT PRIMARY KEY AUTO_INCREMENT,
     izin_adi VARCHAR(50) NOT NULL,
@@ -80,7 +81,7 @@ CREATE TABLE Izin_Turu (
     ucretli_mi BOOLEAN DEFAULT TRUE
 );
 
--- 7. İzin Kayıtları Tablosu
+-- 7. İzin Kayıtları
 CREATE TABLE Izin_Kayit (
     izin_kayit_id INT PRIMARY KEY AUTO_INCREMENT,
     personel_id INT NOT NULL,
@@ -128,21 +129,24 @@ CREATE TABLE Maas_Detay (
     FOREIGN KEY (bilesen_id) REFERENCES Maas_Bileseni(bilesen_id)
 );
 
--- VERİ EKLEME (PDF'teki veriler)
+-- ÖRNEK VERİ GİRİŞİ --
 INSERT INTO Departman (departman_adi, aciklama) VALUES
-('Bilgi İşlem', 'Yazılım ve donanım destek'),
+('Bilgi İşlem', 'Yazılım ve donanım'),
 ('İnsan Kaynakları', 'Personel yönetimi'),
-('Muhasebe', 'Mali işler');
+('Muhasebe', 'Finansal işlemler');
 
 INSERT INTO Pozisyon (pozisyon_adi, taban_maas, departman_id) VALUES 
 ('Yazılım Geliştirici', 25000.00, 1),
 ('İK Uzmanı', 20000.00, 2),
 ('Muhasebe Müdürü', 30000.00, 3);
 
-INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, ise_giris_tarihi, departman_id) VALUES
-('12345678901', 'Ahmet', 'Yılmaz', '1990-05-15', '05551234567', 'ahmet@firma.com', '2020-01-10', 1),
-('98765432109', 'Ayşe', 'Demir', '1988-08-20', '05559876543', 'ayse@firma.com', '2019-03-15', 2);
+INSERT INTO Izin_Turu (izin_adi, yillik_hak_gun) VALUES 
+('Yıllık İzin', 14), ('Rapor', 0), ('Mazeret İzni', 3);
 
--- Ahmet ve Ayşe'yi pozisyonlarına atayalım
+INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, ise_giris_tarihi, departman_id, aktif_mi) VALUES
+('12345678901', 'Ahmet', 'Yılmaz', '1990-05-15', '05551112233', 'ahmet@mail.com', '2020-01-10', 1, TRUE),
+('98765432109', 'Ayşe', 'Demir', '1988-08-20', '05554445566', 'ayse@mail.com', '2019-03-15', 2, TRUE);
+
 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi) VALUES
 (1, 1, '2020-01-10', TRUE),
+(2, 2, '2019-03-15', TRUE);
