@@ -5,7 +5,9 @@ import datetime
 app = Flask(__name__)
 app.secret_key = "cok_gizli_anahtar"
 
-# --- 1. ANA SAYFA (DASHBOARD) ---
+# ==========================================
+# 1. ANA SAYFA (DASHBOARD)
+# ==========================================
 @app.route("/")
 def home():
     conn = get_connection()
@@ -13,10 +15,12 @@ def home():
     
     bugun = datetime.date.today()
     
-    # Varsayılan değerler
+    # İstatistik Değişkenleri
     izinli_sayisi = 0
     toplam_personel = 0
     bekleyen_isler = 0
+    toplam_maas = 0
+    duyurular = []
 
     try:
         # A. Bugün İzinli Olanları Say
@@ -26,8 +30,8 @@ def home():
         if row_izinli:
             izinli_sayisi = row_izinli[0]
 
-        # B. Toplam Aktif Personel Sayısı
-        cursor.execute("SELECT COUNT(*) FROM Personel WHERE aktif_mi = TRUE")
+        # B. Toplam Personel Sayısı (Filtresiz - Kesin Sonuç İçin)
+        cursor.execute("SELECT COUNT(*) FROM Personel")
         row_toplam = cursor.fetchone()
         if row_toplam:
             toplam_personel = row_toplam[0]
@@ -38,26 +42,54 @@ def home():
         if row_bekleyen:
             bekleyen_isler = row_bekleyen[0]
 
+        # D. Toplam Maaş Yükü (Güncel Pozisyonlardan)
+        sql_maas = """
+            SELECT SUM(poz.taban_maas) 
+            FROM Personel_Pozisyon pp
+            JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE pp.guncel_mi = TRUE
+        """
+        cursor.execute(sql_maas)
+        row_maas = cursor.fetchone()
+        if row_maas and row_maas[0]:
+            toplam_maas = row_maas[0]
+
+        # E. Son Duyurular (Son 3 tanesi)
+        try:
+            cursor.execute("SELECT * FROM Duyuru ORDER BY tarih DESC LIMIT 3")
+            duyurular = cursor.fetchall()
+        except Exception as e_duyuru:
+            print(f"Duyuru tablosu henüz yok veya hata: {e_duyuru}")
+            duyurular = []
+
     except Exception as e:
-        print(f"İstatistik Hatası: {e}")
+        print(f"Genel İstatistik Hatası: {e}")
         
     conn.close()
+
+    # Maaş formatlama (Örn: 145000 -> 145.000)
+    maas_formatli = "{:,.0f}".format(toplam_maas).replace(",", ".")
 
     stats = {
         "izinli": izinli_sayisi,
         "toplam": toplam_personel,
         "kalan_calisan": toplam_personel - izinli_sayisi,
-        "bekleyen": bekleyen_isler
+        "bekleyen": bekleyen_isler,
+        "maas_toplam": maas_formatli
     }
 
-    return render_template("home.html", stats=stats)
+    return render_template("home.html", stats=stats, duyurular=duyurular)
 
-# --- 2. PERSONEL LİSTELEME ---
+
+# ==========================================
+# 2. PERSONEL İŞLEMLERİ
+# ==========================================
 @app.route("/personel")
 def personel_list():
     conn = get_connection()
     cursor = conn.cursor()
     
+    # Tüm personeli getirir (Aktif/Pasif ayrımı yapmaksızın görünmesi için)
     sql = """
         SELECT 
             p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
@@ -69,7 +101,6 @@ def personel_list():
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = TRUE
         LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
-        WHERE p.aktif_mi = TRUE
         ORDER BY p.personel_id DESC
     """
     try:
@@ -82,13 +113,14 @@ def personel_list():
     conn.close()
     return render_template("personel_list.html", personeller=personeller)
 
-# --- 3. PERSONEL EKLEME (DÜZELTİLDİ) ---
+
 @app.route("/personel_ekle", methods=["GET", "POST"])
 def personel_ekle():
     conn = get_connection()
     cursor = conn.cursor()
 
     if request.method == "POST":
+        # Form verilerini al
         tc = request.form.get("tc_kimlik_no")
         ad = request.form.get("ad")
         soyad = request.form.get("soyad")
@@ -97,23 +129,20 @@ def personel_ekle():
         email = request.form.get("email")
         dept_id = request.form.get("departman_id")
         poz_id = request.form.get("pozisyon_id")
-        ise_giris = request.form.get("ise_giris_tarihi") # Formdan tarihi al
+        ise_giris = request.form.get("ise_giris_tarihi")
 
         try:
-            # Personel Ekle (DÜZELTME: ise_giris_tarihi sütununu ekledik)
+            # 1. Personel Ekle (aktif_mi = 1 olarak zorluyoruz)
             sql_p = """
-                INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, departman_id, ise_giris_tarihi) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, departman_id, ise_giris_tarihi, aktif_mi) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)
             """
             cursor.execute(sql_p, (tc, ad, soyad, dogum, tel, email, dept_id, ise_giris))
             yeni_id = cursor.lastrowid
 
-            # Pozisyon Ekle
+            # 2. Pozisyon Ekle (Varsa)
             if poz_id:
-                # Pozisyon başlangıç tarihi olarak işe giriş tarihini mi yoksa bugünü mü baz alalım?
-                # Genelde işe giriş tarihi ile başlar.
                 baslangic = ise_giris if ise_giris else datetime.date.today()
-                
                 sql_pp = """
                     INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
                     VALUES (%s, %s, %s, TRUE)
@@ -124,15 +153,14 @@ def personel_ekle():
             flash("Personel başarıyla kaydedildi.", "success")
         except Exception as e:
             conn.rollback()
-            # Hata mesajını detaylı gösterelim
             flash(f"Kayıt Hatası: {str(e)}", "danger")
-            print(f"SQL Hatası: {str(e)}") # Konsola da yazdıralım
+            print(f"SQL Hatası: {str(e)}")
         finally:
             conn.close()
         
         return redirect(url_for("personel_list"))
 
-    # GET İsteği - Formu Göster
+    # GET İsteği: Departman ve Pozisyonları listele
     cursor.execute("SELECT * FROM Departman")
     departmanlar = cursor.fetchall()
     cursor.execute("SELECT * FROM Pozisyon")
@@ -141,7 +169,71 @@ def personel_ekle():
 
     return render_template("personel_ekle.html", departmanlar=departmanlar, pozisyonlar=pozisyonlar)
 
-# --- 4. İZİN YÖNETİMİ ---
+
+# ==========================================
+# 3. DUYURU YÖNETİMİ (YENİ)
+# ==========================================
+@app.route("/duyurular")
+def duyurular_sayfasi():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Tüm duyuruları çek
+    duyurular = []
+    try:
+        cursor.execute("SELECT * FROM Duyuru ORDER BY tarih DESC")
+        duyurular = cursor.fetchall()
+    except Exception as e:
+        print(f"Tablo Hatası: {e}")
+        flash("Duyuru tablosu bulunamadı. Lütfen veritabanını güncelleyin.", "warning")
+
+    conn.close()
+    return render_template("duyurular.html", duyurular=duyurular)
+
+
+@app.route("/duyuru_ekle", methods=["POST"])
+def duyuru_ekle():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    baslik = request.form.get("baslik")
+    icerik = request.form.get("icerik")
+    oncelik = request.form.get("oncelik")
+    tarih = datetime.date.today()
+    
+    try:
+        sql = "INSERT INTO Duyuru (baslik, icerik, oncelik, tarih) VALUES (%s, %s, %s, %s)"
+        cursor.execute(sql, (baslik, icerik, oncelik, tarih))
+        conn.commit()
+        flash("Duyuru başarıyla yayınlandı.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Hata: {str(e)}", "danger")
+    finally:
+        conn.close()
+        
+    return redirect(url_for("duyurular_sayfasi"))
+
+
+@app.route("/duyuru_sil/<int:id>")
+def duyuru_sil(id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Duyuru WHERE duyuru_id = %s", (id,))
+        conn.commit()
+        flash("Duyuru silindi.", "warning")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Silme hatası: {e}", "danger")
+    finally:
+        conn.close()
+    return redirect(url_for("duyurular_sayfasi"))
+
+
+# ==========================================
+# 4. İZİN VE YOKLAMA İŞLEMLERİ
+# ==========================================
 @app.route("/izin", methods=["GET", "POST"])
 def izin():
     conn = get_connection()
@@ -179,7 +271,7 @@ def izin():
         cursor.execute(sql_list)
         izinler = cursor.fetchall()
 
-        cursor.execute("SELECT personel_id, ad, soyad FROM Personel WHERE aktif_mi = TRUE")
+        cursor.execute("SELECT personel_id, ad, soyad FROM Personel")
         personeller = cursor.fetchall()
         cursor.execute("SELECT * FROM Izin_Turu")
         izin_turleri = cursor.fetchall()
@@ -191,7 +283,7 @@ def izin():
     conn.close()
     return render_template("izin.html", izinler=izinler, personeller=personeller, izin_turleri=izin_turleri)
 
-# --- 5. DEVAM (YOKLAMA LİSTESİ) ---
+
 @app.route("/devam")
 def devam():
     conn = get_connection()
@@ -201,6 +293,7 @@ def devam():
     if not secilen_tarih:
         secilen_tarih = datetime.date.today().strftime("%Y-%m-%d")
 
+    # Tüm personeli getirir (Aktif filtresi olmadan)
     sql = """
         SELECT 
             p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, 
@@ -209,7 +302,6 @@ def devam():
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Devam dv ON p.personel_id = dv.personel_id AND dv.tarih = %s
-        WHERE p.aktif_mi = TRUE
     """
     cursor.execute(sql, (secilen_tarih,))
     personeller = cursor.fetchall()
@@ -217,7 +309,7 @@ def devam():
     
     return render_template("devam.html", personeller=personeller, bugun=secilen_tarih)
 
-# --- 6. DEVAM KAYDET ---
+
 @app.route("/devam_kaydet", methods=["POST"])
 def devam_kaydet():
     conn = get_connection()
@@ -233,7 +325,7 @@ def devam_kaydet():
                 personel_id = key.split("_")[1]
                 durum = value 
                 
-                # Önce eski kaydı sil
+                # Önce eski kaydı sil (Tekrarlanan kayıt olmaması için)
                 cursor.execute("DELETE FROM Devam WHERE personel_id = %s AND tarih = %s", (personel_id, secilen_tarih))
                 
                 # Yeni durumu ekle
@@ -252,7 +344,10 @@ def devam_kaydet():
         
     return redirect(url_for("devam", tarih=secilen_tarih))
 
-# --- 7. MAAŞ BORDROSU ---
+
+# ==========================================
+# 5. MAAŞ BORDROSU
+# ==========================================
 @app.route("/maas")
 def maas():
     conn = get_connection()
@@ -271,6 +366,7 @@ def maas():
         
     conn.close()
     return render_template("maas.html", maaslar=maaslar)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
