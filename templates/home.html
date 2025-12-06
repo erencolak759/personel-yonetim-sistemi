@@ -39,207 +39,158 @@
     </div>
 </nav>
 
+<!-- Yan Menü -->
 <div class="offcanvas offcanvas-start border-end" tabindex="-1" id="yanMenu" aria-labelledby="yanMenuLabel" style="width: 280px;">
     <div class="offcanvas-header bg-primary text-white">
         <h5 class="offcanvas-title fw-bold" id="yanMenuLabel">
-            <i class="fas fa-cubes me-2"></i>Modüller
+            <i class="fas fa-layer-group me-2"></i>Navigasyon
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Kapat"></button>
     </div>
-    
-    <div class="bg-light p-3 border-bottom text-center">
-        <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px; font-size: 1.2rem; color: var(--bs-primary);">
-            YK
-        </div>
-        <h6 class="mb-0 fw-bold">Yönetici Paneli</h6>
-        <small class="text-muted">admin@sirket.com</small>
-    </div>
-
     <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush">
-            
+        <div class="list-group list-group-flush mt-2">
             <a href="/" class="list-group-item list-group-item-action py-3 border-0 active-menu">
-                <i class="fas fa-home me-3 fa-fw"></i>Dashboard
+                <i class="fas fa-home me-3 fa-fw"></i>Genel Bakış
             </a>
-
-            <small class="text-uppercase text-muted fw-bold px-3 mt-3 mb-1" style="font-size: 0.7rem;">İK Gelişim</small>
-            
-            <a href="/ise_alim" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-    <i class="fas fa-user-tie me-3 fa-fw text-info"></i>İşe Alım & Adaylar
-</a>
-            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-                <i class="fas fa-star me-3 fa-fw text-warning"></i>Performans & Hedef
+            <a href="/personel" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-users me-3 fa-fw"></i>Personel Listesi
             </a>
-            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-                <i class="fas fa-graduation-cap me-3 fa-fw text-success"></i>Eğitim Planlama
+            <a href="/personel_ekle" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-user-plus me-3 fa-fw text-success"></i>Personel Ekle
             </a>
-
-            <small class="text-uppercase text-muted fw-bold px-3 mt-3 mb-1" style="font-size: 0.7rem;">Kurumsal</small>
-            
-            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-                <i class="fas fa-sitemap me-3 fa-fw text-primary"></i>Organizasyon Şeması
+            <a href="/devam" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-clock me-3 fa-fw text-warning"></i>Günlük Yoklama
             </a>
-            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-                <i class="fas fa-file-contract me-3 fa-fw text-dark"></i>Döküman Arşivi
+            <a href="/izin" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-suitcase me-3 fa-fw text-secondary"></i>İzin İşlemleri
             </a>
-            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
-                <i class="fas fa-chart-line me-3 fa-fw text-danger"></i>Gelişmiş Raporlar
+            <a href="/maas" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-wallet me-3 fa-fw text-info"></i>Maaş & Bordro
             </a>
-
-            <div class="mt-4 border-top">
-                <a href="/ayarlar" class="list-group-item list-group-item-action border-0 px-3 py-3">
-                    <i class="fas fa-cog me-3 fa-fw text-muted"></i>Sistem Ayarları
-                </a>
-                <a href="/cikis" class="list-group-item list-group-item-action border-0 px-3 py-3 text-danger bg-light">
-                    <i class="fas fa-sign-out-alt me-3 fa-fw"></i>Güvenli Çıkış
-                </a>
-            </div>
         </div>
     </div>
 </div>
 
+<!-- İstatistik Kartları -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover">
-            <div class="card-body position-relative">
-                <div class="d-flex justify-content-between align-items-start z-1">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-muted text-uppercase small fw-bold mb-1">Toplam Personel</h6>
                         <h2 class="fw-bold mb-0 text-primary">{{ stats.toplam }}</h2>
+                        <small class="text-success"><i class="fas fa-arrow-up"></i> %5 artış</small>
                     </div>
                     <div class="icon-circle bg-primary bg-opacity-10 text-primary">
                         <i class="fas fa-users fa-lg"></i>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <span class="badge bg-success bg-opacity-10 text-success">Aktif</span>
-                    <small class="text-muted ms-1">Kayıtlı Çalışan</small>
-                </div>
-                <i class="fas fa-users position-absolute text-primary opacity-05" style="font-size: 6rem; bottom: -20px; right: -20px; opacity: 0.05;"></i>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover">
-            <div class="card-body position-relative">
-                <div class="d-flex justify-content-between align-items-start z-1">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-muted text-uppercase small fw-bold mb-1">Bugün İzinli</h6>
                         <h2 class="fw-bold mb-0 text-warning">{{ stats.izinli }}</h2>
+                        <small class="text-dark">Ofiste: {{ stats.kalan_calisan }} Kişi</small>
                     </div>
                     <div class="icon-circle bg-warning bg-opacity-10 text-warning">
                         <i class="fas fa-umbrella-beach fa-lg"></i>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <small class="text-dark fw-bold">Ofiste: {{ stats.kalan_calisan }} Kişi</small>
-                </div>
-                <i class="fas fa-sun position-absolute text-warning" style="font-size: 6rem; bottom: -20px; right: -20px; opacity: 0.05;"></i>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover">
-            <div class="card-body position-relative">
-                <div class="d-flex justify-content-between align-items-start z-1">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Aylık Maaş Yükü</h6>
-                        <h2 class="fw-bold mb-0 text-success">₺{{ stats.maas_toplam }}</h2>
+                        <h6 class="text-muted text-uppercase small fw-bold mb-1">Ödenen Maaş</h6>
+                        <h2 class="fw-bold mb-0 text-success">₺145K</h2>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" style="width: 75%"></div>
+                        </div>
+                        <small class="text-muted">Bütçe: %75</small>
                     </div>
                     <div class="icon-circle bg-success bg-opacity-10 text-success">
                         <i class="fas fa-wallet fa-lg"></i>
                     </div>
                 </div>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
-                </div>
-                <small class="text-muted mt-1 d-block">Toplam Taban Maaş</small>
             </div>
         </div>
     </div>
 
-    <div class="col-md-3 col-sm-6">
-        <div class="card border-0 shadow-sm h-100 overflow-hidden card-hover">
-            <div class="card-body position-relative">
-                <div class="d-flex justify-content-between align-items-start z-1">
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 card-hover">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="text-muted text-uppercase small fw-bold mb-1">Bekleyen İşler</h6>
                         <h2 class="fw-bold mb-0 text-danger">{{ stats.bekleyen }}</h2>
+                        {% if stats.bekleyen > 0 %}
+                            <a href="/izin" class="text-danger text-decoration-none small fw-bold">İncele <i class="fas fa-arrow-right"></i></a>
+                        {% else %}
+                            <small class="text-muted">İşlem yok</small>
+                        {% endif %}
                     </div>
                     <div class="icon-circle bg-danger bg-opacity-10 text-danger">
                         <i class="fas fa-bell fa-lg"></i>
                     </div>
-                </div>
-                <div class="mt-3">
-                     {% if stats.bekleyen > 0 %}
-                        <a href="/izin" class="text-danger text-decoration-none small fw-bold">İncele <i class="fas fa-arrow-right"></i></a>
-                     {% else %}
-                        <small class="text-muted">İşlem yok</small>
-                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4 mb-4">
+<!-- Ana İçerik Bölümü -->
+<div class="row g-4">
+
+    <!-- Sol Kolon: Hızlı İşlemler + Grafikler -->
     <div class="col-lg-8">
-        
+
+        <!-- Hızlı İşlemler -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
-                <h6 class="fw-bold mb-0 text-dark">Hızlı İşlemler</h6>
+                <h6 class="fw-bold mb-0"><i class="fas fa-bolt text-warning me-2"></i>Hızlı İşlemler</h6>
             </div>
             <div class="card-body">
-                <div class="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3">
-                    <div class="col">
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
                         <a href="/personel" class="text-decoration-none">
-                            <div class="card border text-center h-100 py-3 card-hover bg-primary bg-opacity-10 border-primary">
-                                <div class="card-body p-2">
-                                    <div class="mb-2 text-primary"><i class="fas fa-address-book fa-2x"></i></div>
-                                    <h6 class="fw-bold text-primary small mb-0">Personel Listesi</h6>
-                                </div>
+                            <div class="text-center p-3 bg-primary bg-opacity-10 rounded h-100 quick-action">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h6 class="fw-bold text-primary mb-0 small">Personel Listesi</h6>
                             </div>
                         </a>
                     </div>
-                    <div class="col">
+                    <div class="col-md-3 col-6">
                         <a href="/personel_ekle" class="text-decoration-none">
-                            <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
-                                <div class="card-body p-2">
-                                    <div class="mb-2 text-success"><i class="fas fa-user-plus fa-2x"></i></div>
-                                    <h6 class="fw-bold text-dark small mb-0">Personel Ekle</h6>
-                                </div>
+                            <div class="text-center p-3 bg-success bg-opacity-10 rounded h-100 quick-action">
+                                <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
+                                <h6 class="fw-bold text-success mb-0 small">Personel Ekle</h6>
                             </div>
                         </a>
                     </div>
-                    <div class="col">
+                    <div class="col-md-3 col-6">
                         <a href="/devam" class="text-decoration-none">
-                            <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
-                                <div class="card-body p-2">
-                                    <div class="mb-2 text-warning"><i class="fas fa-clipboard-check fa-2x"></i></div>
-                                    <h6 class="fw-bold text-dark small mb-0">Yoklama Al</h6>
-                                </div>
+                            <div class="text-center p-3 bg-warning bg-opacity-10 rounded h-100 quick-action">
+                                <i class="fas fa-clipboard-check fa-2x text-warning mb-2"></i>
+                                <h6 class="fw-bold text-warning mb-0 small">Yoklama Al</h6>
                             </div>
                         </a>
                     </div>
-                    <div class="col">
+                    <div class="col-md-3 col-6">
                         <a href="/izin" class="text-decoration-none">
-                            <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
-                                <div class="card-body p-2">
-                                    <div class="mb-2 text-secondary"><i class="fas fa-plane-departure fa-2x"></i></div>
-                                    <h6 class="fw-bold text-dark small mb-0">İzin Talep</h6>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col">
-                        <a href="/maas" class="text-decoration-none">
-                            <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
-                                <div class="card-body p-2">
-                                    <div class="mb-2 text-info"><i class="fas fa-file-invoice-dollar fa-2x"></i></div>
-                                    <h6 class="fw-bold text-dark small mb-0">Maaş Bordro</h6>
-                                </div>
+                            <div class="text-center p-3 bg-info bg-opacity-10 rounded h-100 quick-action">
+                                <i class="fas fa-plane-departure fa-2x text-info mb-2"></i>
+                                <h6 class="fw-bold text-info mb-0 small">İzin Talep</h6>
                             </div>
                         </a>
                     </div>
@@ -247,138 +198,166 @@
             </div>
         </div>
 
+        <!-- Grafikler - 2'li Düzen -->
+        <div class="row g-4 mb-4">
+            <!-- Departman Dağılımı -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-chart-pie text-primary me-2"></i>Departman Dağılımı
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="departmanChart" style="height: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- İzin Durumu -->
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="fas fa-suitcase text-info me-2"></i>İzin Durumu (Son 3 Ay)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="izinChart" style="height: 200px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devamsızlık Trendi (Tam Genişlik) -->
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0 text-dark">
-                    <i class="fas fa-chart-pie text-primary me-2"></i>Departman Dağılımı
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-chart-line text-danger me-2"></i>Aylık Devamsızlık Trendi (Son 6 Ay)
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-5">
-                        <div style="height: 200px; width: 100%;">
-                            <canvas id="departmanChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-md-7">
-                         <div class="alert alert-light border-start border-4 border-info shadow-sm py-2" role="alert">
-                            <p class="mb-0 small text-muted"><i class="fas fa-info-circle me-1"></i> IT ve Yazılım departmanlarında yoğunluk var.</p>
-                        </div>
-                        <div class="row g-2 mt-2">
-                             <div class="col-6">
-                                 <div class="p-2 bg-light rounded border text-center">
-                                     <small class="text-muted d-block">Yıllık İzin</small>
-                                     <span class="fw-bold text-dark">Ort. 14 Gün</span>
-                                 </div>
-                             </div>
-                             <div class="col-6">
-                                 <div class="p-2 bg-light rounded border text-center">
-                                     <small class="text-muted d-block">Mesai</small>
-                                     <span class="fw-bold text-dark">09:00 - 18:00</span>
-                                 </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
+                <canvas id="devamsizlikChart" style="height: 200px;"></canvas>
             </div>
         </div>
     </div>
 
+    <!-- Sağ Kolon: Duyurular + Sistem Sağlığı + Maaş Grafiği -->
     <div class="col-lg-4">
-        
-        <div class="card border-0 shadow-sm bg-primary text-white h-auto mb-4" style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
-            <div class="card-body">
+
+        <!-- Duyurular -->
+        <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #0d6efd, #0a58ca);">
+            <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <a href="/duyurular" class="text-white text-decoration-none">
-                        <h6 class="fw-bold mb-0 hover-underline"><i class="fas fa-bullhorn me-2"></i>Duyurular</h6>
-                    </a>
-                    {% if duyurular %}
-                    <span class="badge bg-white text-primary rounded-pill px-3">Aktif</span>
-                    {% endif %}
+                    <h6 class="fw-bold mb-0"><i class="fas fa-bullhorn me-2"></i>Duyurular</h6>
+                    <span class="badge bg-white text-primary">2 Yeni</span>
                 </div>
-                
                 <ul class="list-unstyled mb-0">
-                    {% for d in duyurular %}
-                    <li class="mb-3 {% if not loop.last %}border-bottom border-white border-opacity-25 pb-2{% endif %}">
-                        <div class="d-flex justify-content-between">
-                            <small class="opacity-75 mb-1">{{ d.tarih }}</small>
-                            {% if d.oncelik == 'Acil' %}
-                                <span class="badge bg-danger small" style="font-size: 0.6rem;">ACİL</span>
-                            {% elif d.oncelik == 'Bilgi' %}
-                                <span class="badge bg-info text-dark small" style="font-size: 0.6rem;">BİLGİ</span>
-                            {% endif %}
-                        </div>
-                        <span class="fw-bold d-block text-truncate">{{ d.baslik }}</span>
-                        <small class="opacity-75 d-block text-truncate">{{ d.icerik }}</small>
+                    <li class="mb-3 pb-3 border-bottom border-white border-opacity-25">
+                        <small class="d-block opacity-75 mb-1">10 Aralık 2025</small>
+                        <span class="fw-bold d-block mb-1">Maaş Bordroları</span>
+                        <small class="opacity-75">Sistemden kontrol edebilirsiniz.</small>
                     </li>
-                    {% else %}
-                    <li class="text-center opacity-75">
-                        <small>Şu an aktif duyuru bulunmamaktadır.</small>
+                    <li>
+                        <small class="d-block opacity-75 mb-1">15 Aralık 2025</small>
+                        <span class="fw-bold d-block mb-1">Yılbaşı Planı</span>
+                        <small class="opacity-75">31 Aralık yarım gün çalışma.</small>
                     </li>
-                    {% endfor %}
                 </ul>
-                
-                <div class="mt-3 text-center">
-                    <a href="/duyurular" class="btn btn-sm btn-outline-light w-100 rounded-pill">
-                        Tümünü Gör / Yönet
-                    </a>
-                </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm">
+        <!-- Sistem Sağlığı -->
+        <div class="card border-0 shadow-sm mb-4">
             <div class="card-header bg-white border-0 py-3">
-                <h6 class="fw-bold mb-0">Sistem Sağlığı</h6>
+                <h6 class="fw-bold mb-0"><i class="fas fa-heart-pulse text-success me-2"></i>Sistem Sağlığı</h6>
             </div>
-            <div class="card-body pt-0">
+            <div class="card-body">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="flex-shrink-0">
-                        <div class="icon-square bg-success text-white rounded">
-                            <i class="fas fa-database"></i>
-                        </div>
+                    <div class="icon-square bg-success text-white rounded me-3">
+                        <i class="fas fa-database"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
+                    <div class="flex-grow-1">
                         <div class="d-flex justify-content-between mb-1">
                             <span class="fw-bold small">Veritabanı</span>
                             <span class="text-success small fw-bold">Online</span>
                         </div>
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
                         </div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center mb-3">
-                    <div class="flex-shrink-0">
-                        <div class="icon-square bg-primary text-white rounded">
-                            <i class="fas fa-server"></i>
-                        </div>
+                <div class="d-flex align-items-center">
+                    <div class="icon-square bg-primary text-white rounded me-3">
+                        <i class="fas fa-server"></i>
                     </div>
-                    <div class="flex-grow-1 ms-3">
+                    <div class="flex-grow-1">
                         <div class="d-flex justify-content-between mb-1">
                             <span class="fw-bold small">CPU Yükü</span>
                             <span class="text-primary small fw-bold">%12</span>
                         </div>
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-primary" role="progressbar" style="width: 12%"></div>
+                            <div class="progress-bar bg-primary" style="width: 12%"></div>
                         </div>
                     </div>
                 </div>
-                 <div class="mt-3 p-2 bg-light rounded text-center border">
-                     <small class="text-muted">Son Yedekleme: <strong>03:00</strong></small>
-                 </div>
+                <div class="mt-3 p-2 bg-light rounded text-center">
+                    <small class="text-muted">Son Yedekleme: <strong>03:00</strong></small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Departman Maaş Grafiği -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="fas fa-money-bill-wave text-success me-2"></i>Departman Ortalama Maaş
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="maasChart" style="height: 200px;"></canvas>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    body { background-color: #f8f9fa; }
-    .icon-circle { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .icon-square { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
-    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .card-hover:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-    .active-menu { background-color: #e9ecef !important; color: #0d6efd !important; font-weight: bold; border-left: 4px solid #0d6efd !important; }
-    .hover-underline:hover { text-decoration: underline; }
+    .icon-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .icon-square {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .card-hover {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-hover:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .quick-action {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .quick-action:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,.1);
+    }
+    .active-menu {
+        background-color: #e9ecef !important;
+        color: #0d6efd !important;
+        font-weight: bold;
+        border-left: 4px solid #0d6efd !important;
+    }
 </style>
 
 <script>
@@ -390,24 +369,115 @@
     }
     tarihGuncelle();
 
-    // Grafik (Chart.js)
-    const ctx = document.getElementById('departmanChart').getContext('2d');
-    const myChart = new Chart(ctx, {
+    // 1. DEPARTMAN DAĞILIMI
+    const departmanLabels = [{% for d in departman_data %}'{{ d.departman_adi }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const departmanValues = [{% for d in departman_data %}{{ d.sayi }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+    const ctxDept = document.getElementById('departmanChart').getContext('2d');
+    new Chart(ctxDept, {
         type: 'doughnut',
         data: {
-            labels: ['Yazılım', 'İK', 'Muhasebe', 'Pazarlama'],
+            labels: departmanLabels,
             datasets: [{
-                data: [12, 5, 3, 8], // Burası şimdilik statik, ileride veritabanından çekilebilir
+                data: departmanValues,
                 backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545'],
                 borderWidth: 0,
-                hoverOffset: 4
+                hoverOffset: 8
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { boxWidth: 10 } } },
-            cutout: '75%'
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } }
+            },
+            cutout: '65%'
+        }
+    });
+
+    // 2. DEVAMSIZLIK TRENDİ
+    const devamsizlikLabels = [{% for d in devamsizlik_data %}'{{ d.ay }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const devamsizlikValues = [{% for d in devamsizlik_data %}{{ d.sayi }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+    const ctxDevam = document.getElementById('devamsizlikChart').getContext('2d');
+    new Chart(ctxDevam, {
+        type: 'line',
+        data: {
+            labels: devamsizlikLabels,
+            datasets: [{
+                label: 'Devamsızlık',
+                data: devamsizlikValues,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: '#dc3545'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // 3. İZİN DURUMU
+    const izinLabels = [{% for i in izin_stats %}'{{ i.onay_durumu }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const izinValues = [{% for i in izin_stats %}{{ i.sayi }}{% if not loop.last %},{% endif %}{% endfor %}];
+    const izinColors = izinLabels.map(label => {
+        if(label === 'Onaylandi') return '#198754';
+        if(label === 'Reddedildi') return '#dc3545';
+        return '#ffc107';
+    });
+
+    const ctxIzin = document.getElementById('izinChart').getContext('2d');
+    new Chart(ctxIzin, {
+        type: 'bar',
+        data: {
+            labels: izinLabels,
+            datasets: [{
+                data: izinValues,
+                backgroundColor: izinColors,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // 4. MAAŞ DAĞILIMI
+    const maasLabels = [{% for m in maas_dept_data %}'{{ m.departman_adi }}'{% if not loop.last %},{% endif %}{% endfor %}];
+    const maasValues = [{% for m in maas_dept_data %}{{ m.ort_maas }}{% if not loop.last %},{% endif %}{% endfor %}];
+
+    const ctxMaas = document.getElementById('maasChart').getContext('2d');
+    new Chart(ctxMaas, {
+        type: 'bar',
+        data: {
+            labels: maasLabels,
+            datasets: [{
+                data: maasValues,
+                backgroundColor: '#198754',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true }
+            }
         }
     });
 </script>

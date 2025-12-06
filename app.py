@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.secret_key = "cok_gizli_anahtar"
 
 
-# --- 1. ANA SAYFA (DASHBOARD) ---
+# --- 1. ANA SAYFA (DASHBOARD) - GELİŞTİRİLMİŞ GRAFİKLER ---
 @app.route("/")
 def home():
     conn = get_connection()
@@ -52,8 +52,64 @@ def home():
         if row_bekleyen:
             bekleyen_isler = row_bekleyen["sayi"]
 
+        # D. Departman Dağılımı (Grafik için)
+        sql_dept = """
+            SELECT d.departman_adi, COUNT(p.personel_id) as sayi
+            FROM Departman d
+            LEFT JOIN Personel p ON d.departman_id = p.departman_id AND p.aktif_mi = TRUE
+            GROUP BY d.departman_id, d.departman_adi
+            HAVING sayi > 0
+        """
+        cursor.execute(sql_dept)
+        departman_data = cursor.fetchall()
+
+        # E. Son 6 Ay Devamsızlık Trendi
+        sql_devamsizlik = """
+            SELECT 
+                DATE_FORMAT(tarih, '%Y-%m') as ay,
+                COUNT(*) as sayi
+            FROM Devam
+            WHERE durum = 'Devamsiz' 
+            AND tarih >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY DATE_FORMAT(tarih, '%Y-%m')
+            ORDER BY ay ASC
+        """
+        cursor.execute(sql_devamsizlik)
+        devamsizlik_data = cursor.fetchall()
+
+        # F. İzin Durumu İstatistikleri
+        sql_izin_stats = """
+            SELECT 
+                onay_durumu,
+                COUNT(*) as sayi
+            FROM Izin_Kayit
+            WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+            GROUP BY onay_durumu
+        """
+        cursor.execute(sql_izin_stats)
+        izin_stats = cursor.fetchall()
+
+        # G. Departmanlara Göre Ortalama Maaş
+        sql_maas_dept = """
+            SELECT 
+                d.departman_adi,
+                ROUND(AVG(poz.taban_maas), 2) as ort_maas
+            FROM Departman d
+            JOIN Personel p ON d.departman_id = p.departman_id AND p.aktif_mi = TRUE
+            LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = TRUE
+            LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
+            GROUP BY d.departman_id, d.departman_adi
+            HAVING ort_maas IS NOT NULL
+        """
+        cursor.execute(sql_maas_dept)
+        maas_dept_data = cursor.fetchall()
+
     except Exception as e:
         print("İstatistik Hatası:", repr(e))
+        departman_data = []
+        devamsizlik_data = []
+        izin_stats = []
+        maas_dept_data = []
 
     finally:
         conn.close()
@@ -65,7 +121,12 @@ def home():
         "bekleyen": bekleyen_isler
     }
 
-    return render_template("home.html", stats=stats)
+    return render_template("home.html",
+                           stats=stats,
+                           departman_data=departman_data,
+                           devamsizlik_data=devamsizlik_data,
+                           izin_stats=izin_stats,
+                           maas_dept_data=maas_dept_data)
 
 
 # --- 2. PERSONEL LİSTELEME ---
@@ -99,7 +160,61 @@ def personel_list():
     return render_template("personel_list.html", personeller=personeller)
 
 
-# --- 2B. PERSONEL DETAY SAYFASI (EKLENDI) ---
+# --- 2C. PERSONEL DÜZENLEME (YENİ!) ---
+@app.route("/personel_duzenle", methods=["POST"])
+def personel_duzenle():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    personel_id = request.form.get("personel_id")
+    ad = request.form.get("ad")
+    soyad = request.form.get("soyad")
+    tc = request.form.get("tc_kimlik_no")
+    telefon = request.form.get("telefon")
+    email = request.form.get("email")
+
+    try:
+        sql = """
+            UPDATE Personel 
+            SET ad = %s, soyad = %s, tc_kimlik_no = %s, telefon = %s, email = %s
+            WHERE personel_id = %s
+        """
+        cursor.execute(sql, (ad, soyad, tc, telefon, email, personel_id))
+        conn.commit()
+        flash("Personel bilgileri başarıyla güncellendi!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Güncelleme hatası: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("personel_list"))
+
+
+# --- 2D. PERSONEL SİLME (YENİ!) ---
+@app.route("/personel_sil", methods=["POST"])
+def personel_sil():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    personel_id = request.form.get("personel_id")
+
+    try:
+        # Personeli pasif yap (silme yerine)
+        sql = "UPDATE Personel SET aktif_mi = FALSE WHERE personel_id = %s"
+        cursor.execute(sql, (personel_id,))
+        conn.commit()
+        flash("Personel başarıyla silindi.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Silme hatası: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("personel_list"))
+
+
+# --- 2B. PERSONEL DETAY SAYFASI ---
 @app.route("/personel/<int:personel_id>")
 def personel_detay(personel_id):
     conn = get_connection()
@@ -200,7 +315,6 @@ def personel_ekle():
         ise_giris = request.form.get("ise_giris_tarihi")
 
         try:
-            # Personel Ekle
             sql_p = """
                 INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, departman_id, ise_giris_tarihi) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -208,10 +322,8 @@ def personel_ekle():
             cursor.execute(sql_p, (tc, ad, soyad, dogum, tel, email, dept_id, ise_giris))
             yeni_id = cursor.lastrowid
 
-            # Pozisyon Ekle
             if poz_id:
                 baslangic = ise_giris if ise_giris else datetime.date.today()
-
                 sql_pp = """
                     INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
                     VALUES (%s, %s, %s, TRUE)
@@ -229,7 +341,6 @@ def personel_ekle():
 
         return redirect(url_for("personel_list"))
 
-    # GET İsteği
     cursor.execute("SELECT * FROM Departman")
     departmanlar = cursor.fetchall()
     cursor.execute("SELECT * FROM Pozisyon")
@@ -239,7 +350,7 @@ def personel_ekle():
     return render_template("personel_ekle.html", departmanlar=departmanlar, pozisyonlar=pozisyonlar)
 
 
-# --- 4. İZİN YÖNETİMİ (GÜNCELLENDİ: FİLTRELEME EKLENDİ) ---
+# --- 4. İZİN YÖNETİMİ ---
 @app.route("/izin", methods=["GET", "POST"])
 def izin():
     conn = get_connection()
@@ -266,10 +377,11 @@ def izin():
 
         return redirect(url_for("izin"))
 
-    # Filtreleme Özelliği Eklendi
+    # Filtre parametresi
     filtre = request.args.get('filtre', 'tumunu')
 
     try:
+        # SQL sorgusu filtreye göre değişiyor
         if filtre == 'bekleyen':
             where_clause = "WHERE k.onay_durumu = 'Beklemede'"
         elif filtre == 'onaylanan':
@@ -347,10 +459,8 @@ def devam_kaydet():
                 personel_id = key.split("_")[1]
                 durum = value
 
-                # Önce eski kaydı sil
                 cursor.execute("DELETE FROM Devam WHERE personel_id = %s AND tarih = %s", (personel_id, secilen_tarih))
 
-                # Yeni durumu ekle
                 sql = "INSERT INTO Devam (personel_id, tarih, durum) VALUES (%s, %s, %s)"
                 cursor.execute(sql, (personel_id, secilen_tarih, durum))
 
@@ -367,7 +477,7 @@ def devam_kaydet():
     return redirect(url_for("devam", tarih=secilen_tarih))
 
 
-# --- 7. İZİN ONAYLAMA/REDDETME (EKLENDI) ---
+# --- 7. İZİN ONAYLAMA/REDDETME (YENİ!) ---
 @app.route("/izin_onayla/<int:izin_id>", methods=["POST"])
 def izin_onayla(izin_id):
     conn = get_connection()

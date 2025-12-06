@@ -49,21 +49,25 @@
                         </td>
                         <td><span class="badge bg-light text-dark border">{{ p.departman_adi or "-" }}</span></td>
                         <td>{{ p.pozisyon_adi or "-" }}</td>
-                        <td class="fw-bold text-success">{{ p.taban_maas }} ₺</td>
-                        <td class="text-muted small">{{ p.telefon }}</td>
+                        <td class="fw-bold text-success">{{ p.taban_maas or "0" }} ₺</td>
+                        <td class="text-muted small">{{ p.telefon or "-" }}</td>
                         <td class="text-end pe-4">
                             <a href="/personel/{{ p.personel_id }}" class="btn btn-sm btn-primary" title="Detaylar">
                                 <i class="fas fa-eye"></i> Detay
                             </a>
-                        <button class="btn btn-sm btn-light text-primary" title="Düzenle"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-light text-danger" title="Sil"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn btn-sm btn-light text-primary" title="Düzenle" onclick="duzenlemeModal({{ p.personel_id }}, '{{ p.ad }}', '{{ p.soyad }}', '{{ p.tc_kimlik_no }}', '{{ p.telefon }}', '{{ p.email }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-light text-danger" title="Sil" onclick="silOnay({{ p.personel_id }}, '{{ p.ad }} {{ p.soyad }}')">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
+
         {% if not personeller %}
         <div class="text-center py-5">
             <div class="mb-3 text-muted opacity-25">
@@ -72,9 +76,74 @@
             <p class="text-muted">Sistemde kayıtlı personel bulunamadı.</p>
         </div>
         {% endif %}
-        
+
         <div id="noResults" class="text-center py-5 d-none">
             <p class="text-muted">Aradığınız kriterlere uygun kayıt bulunamadı.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Düzenleme Modal -->
+<div class="modal fade" id="duzenlemeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Personel Düzenle</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/personel_duzenle" id="duzenlemeForm">
+                <input type="hidden" name="personel_id" id="edit_personel_id">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Ad</label>
+                        <input type="text" name="ad" id="edit_ad" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Soyad</label>
+                        <input type="text" name="soyad" id="edit_soyad" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">TC Kimlik No</label>
+                        <input type="text" name="tc_kimlik_no" id="edit_tc" class="form-control" maxlength="11" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Telefon</label>
+                        <input type="text" name="telefon" id="edit_telefon" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Email</label>
+                        <input type="email" name="email" id="edit_email" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary px-4">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Silme Onay Modal -->
+<div class="modal fade" id="silmeModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Personel Sil</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/personel_sil" id="silmeForm">
+                <input type="hidden" name="personel_id" id="sil_personel_id">
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="mb-0"><strong id="sil_personel_adi"></strong> isimli personeli silmek istediğinize emin misiniz?</p>
+                    <small class="text-muted">Bu işlem geri alınamaz!</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-danger px-4">Evet, Sil</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -91,6 +160,7 @@
 </style>
 
 <script>
+    // Arama Fonksiyonu
     function filterTable() {
         var input = document.getElementById("searchInput");
         var filter = input.value.toLowerCase();
@@ -99,10 +169,8 @@
         var hasVisibleRow = false;
 
         for (var i = 0; i < rows.length; i++) {
-            // Satırın içindeki tüm metni al
             var textContent = rows[i].textContent || rows[i].innerText;
-            
-            // Eşleşme kontrolü
+
             if (textContent.toLowerCase().indexOf(filter) > -1) {
                 rows[i].style.display = "";
                 hasVisibleRow = true;
@@ -111,13 +179,34 @@
             }
         }
 
-        // Hiçbir sonuç yoksa uyarı mesajını göster
         var noResultsDiv = document.getElementById("noResults");
         if (!hasVisibleRow && rows.length > 0) {
             noResultsDiv.classList.remove("d-none");
         } else {
             noResultsDiv.classList.add("d-none");
         }
+    }
+
+    // Düzenleme Modal Açma
+    function duzenlemeModal(id, ad, soyad, tc, telefon, email) {
+        document.getElementById('edit_personel_id').value = id;
+        document.getElementById('edit_ad').value = ad;
+        document.getElementById('edit_soyad').value = soyad;
+        document.getElementById('edit_tc').value = tc;
+        document.getElementById('edit_telefon').value = telefon || '';
+        document.getElementById('edit_email').value = email || '';
+
+        var modal = new bootstrap.Modal(document.getElementById('duzenlemeModal'));
+        modal.show();
+    }
+
+    // Silme Onay Modal Açma
+    function silOnay(id, adSoyad) {
+        document.getElementById('sil_personel_id').value = id;
+        document.getElementById('sil_personel_adi').textContent = adSoyad;
+
+        var modal = new bootstrap.Modal(document.getElementById('silmeModal'));
+        modal.show();
     }
 </script>
 
