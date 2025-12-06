@@ -1,14 +1,45 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session
 from db import get_connection
 from utils.pdf_generator import PDFGenerator
 import datetime
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "cok_gizli_anahtar"
 
+# 1. GİRİŞ EKRANI (İLK AÇILAN SAYFA)
+# ==========================================
+
+
+@app.route("/")
+def login_page():
+    # Eğer kullanıcı zaten giriş yapmışsa direkt Home'a at
+    
+    return render_template("login.html")
+
+@app.route("/giris_yap", methods=["POST"])
+def giris_yap():
+   
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    
+        
+        # İŞTE BURASI: Giriş başarılıysa 'home' fonksiyonuna git
+    return redirect(url_for('home')) 
+   
+
+@app.route("/cikis")
+def cikis():
+    session.clear()
+    flash("Çıkış yapıldı.", "info")
+    return redirect(url_for('login_page'))
+
+
 
 # --- 1. ANA SAYFA (DASHBOARD) - GELİŞTİRİLMİŞ GRAFİKLER ---
-@app.route("/")
+@app.route("/home")
 def home():
     conn = get_connection()
     cursor = conn.cursor()
@@ -974,17 +1005,6 @@ def ayarlar_duyurular():
     return redirect(url_for("home"))
 
 
-# --- 11. PROFİL & ÇIKIŞ (YENİ - PLACEHOLDER) ---
-@app.route("/profil")
-def profil():
-    flash("Profil ayarları sayfası yakında eklenecek!", "info")
-    return redirect(url_for("home"))
-
-
-@app.route("/cikis")
-def cikis():
-    flash("Çıkış yapıldı! (Login sistemi eklenince aktif olacak)", "success")
-    return redirect(url_for("home"))
 
 
 if __name__ == "__main__":
