@@ -65,7 +65,6 @@ def home():
         "bekleyen": bekleyen_isler
     }
 
-    print("TOPLAM PERSONEL:", toplam_personel)
 
     return render_template("home.html", stats=stats)
 
