@@ -52,8 +52,11 @@
                         <td class="fw-bold text-success">{{ p.taban_maas }} ₺</td>
                         <td class="text-muted small">{{ p.telefon }}</td>
                         <td class="text-end pe-4">
-                            <button class="btn btn-sm btn-light text-primary" title="Düzenle"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-light text-danger" title="Sil"><i class="fas fa-trash-alt"></i></button>
+                            <a href="/personel/{{ p.personel_id }}" class="btn btn-sm btn-primary" title="Detaylar">
+                                <i class="fas fa-eye"></i> Detay
+                            </a>
+                        <button class="btn btn-sm btn-light text-primary" title="Düzenle"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-light text-danger" title="Sil"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                     {% endfor %}

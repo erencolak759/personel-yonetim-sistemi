@@ -12,51 +12,120 @@
     </button>
 </div>
 
+<!-- Filtre Butonları -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="btn-group w-100" role="group">
+            <a href="/izin?filtre=tumunu" class="btn {% if filtre == 'tumunu' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="fas fa-list me-2"></i>Tümü ({{ izinler|length }})
+            </a>
+            <a href="/izin?filtre=bekleyen" class="btn {% if filtre == 'bekleyen' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                <i class="fas fa-clock me-2"></i>Bekleyen
+            </a>
+            <a href="/izin?filtre=onaylanan" class="btn {% if filtre == 'onaylanan' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="fas fa-check-circle me-2"></i>Onaylanan
+            </a>
+            <a href="/izin?filtre=reddedilen" class="btn {% if filtre == 'reddedilen' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <i class="fas fa-times-circle me-2"></i>Reddedilen
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="bg-light">
-                <tr>
-                    <th class="ps-4">Personel</th>
-                    <th>İzin Türü</th>
-                    <th>Başlangıç - Bitiş</th>
-                    <th>Süre</th>
-                    <th>Durum</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for iz in izinler %}
-                <tr>
-                    <td class="ps-4 fw-bold">{{ iz.ad }} {{ iz.soyad }}</td>
-                    <td>{{ iz.izin_adi }}</td>
-                    <td>
-                        <span class="d-block small text-dark">{{ iz.baslangic_tarihi }}</span>
-                        <span class="d-block small text-muted">{{ iz.bitis_tarihi }}</span>
-                    </td>
-                    <td><span class="badge bg-white text-dark border">{{ iz.gun_sayisi }} Gün</span></td>
-                    <td>
-                        {% if iz.onay_durumu == 'Onaylandi' %}
-                            <span class="badge bg-success bg-opacity-10 text-success px-3">Onaylandı</span>
-                        {% elif iz.onay_durumu == 'Reddedildi' %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger px-3">Reddedildi</span>
-                        {% else %}
-                            <span class="badge bg-warning bg-opacity-10 text-warning px-3">Beklemede</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Personel</th>
+                        <th>İzin Türü</th>
+                        <th>Başlangıç - Bitiş</th>
+                        <th>Süre</th>
+                        <th>Durum</th>
+                        <th class="text-end pe-4">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for iz in izinler %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ iz.ad }} {{ iz.soyad }}</td>
+                        <td>
+                            <span class="badge bg-info bg-opacity-10 text-info">
+                                {{ iz.izin_adi }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="d-block small text-dark">
+                                <i class="fas fa-calendar-day me-1"></i>{{ iz.baslangic_tarihi }}
+                            </span>
+                            <span class="d-block small text-muted">
+                                <i class="fas fa-calendar-check me-1"></i>{{ iz.bitis_tarihi }}
+                            </span>
+                        </td>
+                        <td><span class="badge bg-white text-dark border">{{ iz.gun_sayisi }} Gün</span></td>
+                        <td>
+                            {% if iz.onay_durumu == 'Onaylandi' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-3">
+                                    <i class="fas fa-check-circle me-1"></i>Onaylandı
+                                </span>
+                            {% elif iz.onay_durumu == 'Reddedildi' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger px-3">
+                                    <i class="fas fa-times-circle me-1"></i>Reddedildi
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning px-3">
+                                    <i class="fas fa-clock me-1"></i>Beklemede
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if iz.onay_durumu == 'Beklemede' %}
+                                <!-- Onaylama Formu -->
+                                <form method="POST" action="/izin_onayla/{{ iz.izin_kayit_id }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-success"
+                                            onclick="return confirm('Bu izin talebini onaylamak istediğinize emin misiniz?')">
+                                        <i class="fas fa-check me-1"></i>Onayla
+                                    </button>
+                                </form>
+
+                                <!-- Reddetme Formu -->
+                                <form method="POST" action="/izin_reddet/{{ iz.izin_kayit_id }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Bu izin talebini reddetmek istediğinize emin misiniz?')">
+                                        <i class="fas fa-times me-1"></i>Reddet
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">
+                                    <i class="fas fa-lock me-1"></i>İşlem Tamamlandı
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
         {% if not izinler %}
         <div class="text-center py-5 text-muted">
             <i class="fas fa-umbrella-beach fa-3x mb-3 opacity-25"></i>
-            <p>Henüz izin kaydı bulunmamaktadır.</p>
+            {% if filtre == 'bekleyen' %}
+                <p>Bekleyen izin talebi bulunmamaktadır.</p>
+            {% elif filtre == 'onaylanan' %}
+                <p>Onaylanmış izin kaydı bulunmamaktadır.</p>
+            {% elif filtre == 'reddedilen' %}
+                <p>Reddedilmiş izin kaydı bulunmamaktadır.</p>
+            {% else %}
+                <p>Henüz izin kaydı bulunmamaktadır.</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
 </div>
 
+<!-- İzin Ekleme Modal -->
 <div class="modal fade" id="izinEkleModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content border-0 shadow">
@@ -66,10 +135,11 @@
       </div>
       <form method="post" action="{{ url_for('izin') }}">
           <div class="modal-body p-4">
-            
+
             <div class="mb-3">
                 <label class="form-label fw-bold small">Personel Seçiniz</label>
                 <select name="personel_id" class="form-select" required>
+                    <option value="">Seçiniz...</option>
                     {% for p in personeller %}
                     <option value="{{ p.personel_id }}">{{ p.ad }} {{ p.soyad }}</option>
                     {% endfor %}
@@ -79,6 +149,7 @@
             <div class="mb-3">
                 <label class="form-label fw-bold small">İzin Türü</label>
                 <select name="izin_turu_id" class="form-select" required>
+                    <option value="">Seçiniz...</option>
                     {% for t in izin_turleri %}
                     <option value="{{ t.izin_turu_id }}">{{ t.izin_adi }}</option>
                     {% endfor %}
