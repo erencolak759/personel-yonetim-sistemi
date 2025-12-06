@@ -8,6 +8,9 @@ app.secret_key = "cok_gizli_anahtar"
 # ==========================================
 # 1. ANA SAYFA (DASHBOARD)
 # ==========================================
+# ==========================================
+# 1. ANA SAYFA (DASHBOARD) - DÜZELTİLMİŞ HALİ
+# ==========================================
 @app.route("/")
 def home():
     conn = get_connection()
@@ -24,35 +27,29 @@ def home():
 
     try:
         # A. Bugün İzinli Olanlar
-        sql_izinli = """
-            SELECT COUNT(*) AS sayi
-            FROM Devam
-            WHERE tarih = %s AND durum = 'Izinli'
-        """
+        # DÜZELTME 1: ["sayi"] yerine [0] kullandık.
+        sql_izinli = "SELECT COUNT(*) FROM Devam WHERE tarih = %s AND durum = 'Izinli'"
         cursor.execute(sql_izinli, (bugun,))
         row_izinli = cursor.fetchone()
         if row_izinli:
-            # dict geldiği için key ile erişiyoruz
-            izinli_sayisi = row_izinli["sayi"]
+            izinli_sayisi = row_izinli[0] 
 
-        # B. Toplam Aktif Personel Sayısı
-        cursor.execute("SELECT COUNT(*) FROM Personel WHERE aktif_mi = TRUE")
+        # B. Toplam Personel Sayısı
+        # DÜZELTME 2: 'aktif_mi' filtresini kaldırdık (Kesin sayım için)
+        # DÜZELTME 3: ["sayi"] yerine [0] kullandık.
+        cursor.execute("SELECT COUNT(*) FROM Personel")
         row_toplam = cursor.fetchone()
         if row_toplam:
-            toplam_personel = row_toplam["sayi"]
+            toplam_personel = row_toplam[0]
 
         # C. Bekleyen İzin Talepleri
-        sql_bekleyen = """
-            SELECT COUNT(*) AS sayi
-            FROM Izin_Kayit
-            WHERE onay_durumu = 'Beklemede'
-        """
-        cursor.execute(sql_bekleyen)
+        # DÜZELTME 4: ["sayi"] yerine [0] kullandık.
+        cursor.execute("SELECT COUNT(*) FROM Izin_Kayit WHERE onay_durumu = 'Beklemede'")
         row_bekleyen = cursor.fetchone()
         if row_bekleyen:
-            bekleyen_isler = row_bekleyen["sayi"]
+            bekleyen_isler = row_bekleyen[0]
 
-        # D. Toplam Maaş Yükü (Güncel Pozisyonlardan)
+        # D. Toplam Maaş Yükü
         sql_maas = """
             SELECT SUM(poz.taban_maas) 
             FROM Personel_Pozisyon pp
@@ -64,18 +61,22 @@ def home():
         if row_maas and row_maas[0]:
             toplam_maas = row_maas[0]
 
-        # E. Son Duyurular (Son 3 tanesi)
+        # E. Son Duyurular
         try:
             cursor.execute("SELECT * FROM Duyuru ORDER BY tarih DESC LIMIT 3")
             duyurular = cursor.fetchall()
-        except Exception as e_duyuru:
-            print(f"Duyuru tablosu henüz yok veya hata: {e_duyuru}")
+        except:
             duyurular = []
 
     except Exception as e:
-        print(f"İstatistik Hatası: {e}")
+        # Hata varsa terminale yazdırır, böylece 0'ın sebebini anlarız
+        print(f"DASHBOARD HATASI: {e}")
         
-    conn.close()
+    finally:
+        conn.close()
+
+    # Maaş formatlama
+    maas_formatli = "{:,.0f}".format(toplam_maas).replace(",", ".")
 
     stats = {
         "izinli": izinli_sayisi,
@@ -85,10 +86,7 @@ def home():
         "maas_toplam": maas_formatli
     }
 
-
     return render_template("home.html", stats=stats, duyurular=duyurular)
-
-
 # --- 2. PERSONEL LİSTELEME ---
 @app.route("/personel")
 def personel_list():
@@ -372,6 +370,84 @@ def maas():
         
     conn.close()
     return render_template("maas.html", maaslar=maaslar)
+
+# ==========================================
+# 6. İŞE ALIM (ADAY TAKİP) MODÜLÜ
+# ==========================================
+# ==========================================
+# 6. İŞE ALIM (ADAY TAKİP) MODÜLÜ (GÜNCELLENDİ)
+# ==========================================
+# ==========================================
+# 6. İŞE ALIM (ADAY TAKİP) - GÜVENLİ MOD
+# ==========================================
+@app.route("/ise_alim")
+def ise_alim():
+    # Şimdilik veritabanından çekmiyoruz, boş liste gönderiyoruz.
+    # Bu sayede sayfa kesinlikle açılır.
+    adaylar = [] 
+    stats = {'toplam': 0, 'mulakat': 0}
+    
+    return render_template("ise_alim.html", adaylar=adaylar, stats=stats)
+
+@app.route("/aday_ekle", methods=["POST"])
+def aday_ekle():
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    ad_soyad = request.form.get("ad_soyad")
+    telefon = request.form.get("telefon")
+    email = request.form.get("email")
+    pozisyon = request.form.get("pozisyon")
+    # Durum varsayılan olarak 'Yeni' atanır
+    
+    try:
+        sql = "INSERT INTO Adaylar (ad_soyad, telefon, email, pozisyon, durum, basvuru_tarihi) VALUES (%s, %s, %s, %s, 'Yeni', CURDATE())"
+        cursor.execute(sql, (ad_soyad, telefon, email, pozisyon))
+        conn.commit()
+        flash(f"{ad_soyad} aday havuzuna eklendi.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Hata: {e}", "danger")
+    finally:
+        conn.close()
+        
+    return redirect(url_for("ise_alim"))
+
+@app.route("/aday_durum_degistir/<int:id>/<yeni_durum>")
+def aday_durum_degistir(id, yeni_durum):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # Durumu güncelle
+        cursor.execute("UPDATE Adaylar SET durum = %s WHERE aday_id = %s", (yeni_durum, id))
+        conn.commit()
+        
+        msg = f"Aday durumu '{yeni_durum}' olarak güncellendi."
+        if yeni_durum == 'Kabul':
+            msg = "Harika! Aday işe alındı olarak işaretlendi. Personel listesine eklemeyi unutmayın."
+            
+        flash(msg, "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Güncelleme hatası: {e}", "danger")
+    finally:
+        conn.close()
+    return redirect(url_for("ise_alim"))
+
+@app.route("/aday_sil/<int:id>")
+def aday_sil(id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM Adaylar WHERE aday_id = %s", (id,))
+        conn.commit()
+        flash("Aday kaydı silindi.", "warning")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Silme hatası: {e}", "danger")
+    finally:
+        conn.close()
+    return redirect(url_for("ise_alim"))
 
 
 if __name__ == "__main__":

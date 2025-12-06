@@ -42,42 +42,58 @@
 <div class="offcanvas offcanvas-start border-end" tabindex="-1" id="yanMenu" aria-labelledby="yanMenuLabel" style="width: 280px;">
     <div class="offcanvas-header bg-primary text-white">
         <h5 class="offcanvas-title fw-bold" id="yanMenuLabel">
-            <i class="fas fa-layer-group me-2"></i>Navigasyon
+            <i class="fas fa-cubes me-2"></i>Modüller
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Kapat"></button>
     </div>
+    
+    <div class="bg-light p-3 border-bottom text-center">
+        <div class="bg-white rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px; font-size: 1.2rem; color: var(--bs-primary);">
+            YK
+        </div>
+        <h6 class="mb-0 fw-bold">Yönetici Paneli</h6>
+        <small class="text-muted">admin@sirket.com</small>
+    </div>
+
     <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush mt-2">
+        <div class="list-group list-group-flush">
+            
             <a href="/" class="list-group-item list-group-item-action py-3 border-0 active-menu">
-                <i class="fas fa-home me-3 fa-fw"></i>Genel Bakış
+                <i class="fas fa-home me-3 fa-fw"></i>Dashboard
             </a>
-            <a href="/personel" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-users me-3 fa-fw"></i>Personel Listesi
+
+            <small class="text-uppercase text-muted fw-bold px-3 mt-3 mb-1" style="font-size: 0.7rem;">İK Gelişim</small>
+            
+            <a href="/ise_alim" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+    <i class="fas fa-user-tie me-3 fa-fw text-info"></i>İşe Alım & Adaylar
+</a>
+            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+                <i class="fas fa-star me-3 fa-fw text-warning"></i>Performans & Hedef
             </a>
-            <a href="/personel_ekle" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-user-plus me-3 fa-fw text-success"></i>Personel Ekle
+            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+                <i class="fas fa-graduation-cap me-3 fa-fw text-success"></i>Eğitim Planlama
             </a>
-            <a href="/devam" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-clock me-3 fa-fw text-warning"></i>Günlük Yoklama
+
+            <small class="text-uppercase text-muted fw-bold px-3 mt-3 mb-1" style="font-size: 0.7rem;">Kurumsal</small>
+            
+            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+                <i class="fas fa-sitemap me-3 fa-fw text-primary"></i>Organizasyon Şeması
             </a>
-            <a href="/izin" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-suitcase me-3 fa-fw text-secondary"></i>İzin İşlemleri
+            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+                <i class="fas fa-file-contract me-3 fa-fw text-dark"></i>Döküman Arşivi
             </a>
-            <a href="/maas" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-wallet me-3 fa-fw text-info"></i>Maaş & Bordro
+            <a href="#" class="list-group-item list-group-item-action border-0 px-3 py-2 text-secondary">
+                <i class="fas fa-chart-line me-3 fa-fw text-danger"></i>Gelişmiş Raporlar
             </a>
-            <a href="/duyurular" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-bullhorn me-3 fa-fw text-danger"></i>Duyurular
-            </a>
-            <div class="mt-4 px-3">
-                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">Sistem</small>
+
+            <div class="mt-4 border-top">
+                <a href="/ayarlar" class="list-group-item list-group-item-action border-0 px-3 py-3">
+                    <i class="fas fa-cog me-3 fa-fw text-muted"></i>Sistem Ayarları
+                </a>
+                <a href="/cikis" class="list-group-item list-group-item-action border-0 px-3 py-3 text-danger bg-light">
+                    <i class="fas fa-sign-out-alt me-3 fa-fw"></i>Güvenli Çıkış
+                </a>
             </div>
-            <a href="/ayarlar" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-cog me-3 fa-fw text-dark"></i>Ayarlar
-            </a>
-            <a href="/cikis" class="list-group-item list-group-item-action py-3 border-0 text-danger">
-                <i class="fas fa-sign-out-alt me-3 fa-fw"></i>Çıkış Yap
-            </a>
         </div>
     </div>
 </div>
@@ -96,7 +112,7 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="badge bg-success bg-opacity-10 text-success"><i class="fas fa-arrow-up"></i> Aktif</span>
+                    <span class="badge bg-success bg-opacity-10 text-success">Aktif</span>
                     <small class="text-muted ms-1">Kayıtlı Çalışan</small>
                 </div>
                 <i class="fas fa-users position-absolute text-primary opacity-05" style="font-size: 6rem; bottom: -20px; right: -20px; opacity: 0.05;"></i>
@@ -181,61 +197,47 @@
                         <a href="/personel" class="text-decoration-none">
                             <div class="card border text-center h-100 py-3 card-hover bg-primary bg-opacity-10 border-primary">
                                 <div class="card-body p-2">
-                                    <div class="mb-2 text-primary">
-                                        <i class="fas fa-address-book fa-2x"></i>
-                                    </div>
+                                    <div class="mb-2 text-primary"><i class="fas fa-address-book fa-2x"></i></div>
                                     <h6 class="fw-bold text-primary small mb-0">Personel Listesi</h6>
                                 </div>
                             </div>
                         </a>
                     </div>
-                    
                     <div class="col">
                         <a href="/personel_ekle" class="text-decoration-none">
                             <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
                                 <div class="card-body p-2">
-                                    <div class="mb-2 text-success">
-                                        <i class="fas fa-user-plus fa-2x"></i>
-                                    </div>
+                                    <div class="mb-2 text-success"><i class="fas fa-user-plus fa-2x"></i></div>
                                     <h6 class="fw-bold text-dark small mb-0">Personel Ekle</h6>
                                 </div>
                             </div>
                         </a>
                     </div>
-                    
                     <div class="col">
                         <a href="/devam" class="text-decoration-none">
                             <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
                                 <div class="card-body p-2">
-                                    <div class="mb-2 text-warning">
-                                        <i class="fas fa-clipboard-check fa-2x"></i>
-                                    </div>
+                                    <div class="mb-2 text-warning"><i class="fas fa-clipboard-check fa-2x"></i></div>
                                     <h6 class="fw-bold text-dark small mb-0">Yoklama Al</h6>
                                 </div>
                             </div>
                         </a>
                     </div>
-
                     <div class="col">
                         <a href="/izin" class="text-decoration-none">
                             <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
                                 <div class="card-body p-2">
-                                    <div class="mb-2 text-secondary">
-                                        <i class="fas fa-plane-departure fa-2x"></i>
-                                    </div>
+                                    <div class="mb-2 text-secondary"><i class="fas fa-plane-departure fa-2x"></i></div>
                                     <h6 class="fw-bold text-dark small mb-0">İzin Talep</h6>
                                 </div>
                             </div>
                         </a>
                     </div>
-
                     <div class="col">
                         <a href="/maas" class="text-decoration-none">
                             <div class="card border-0 shadow-sm text-center h-100 py-3 card-hover bg-light">
                                 <div class="card-body p-2">
-                                    <div class="mb-2 text-info">
-                                        <i class="fas fa-file-invoice-dollar fa-2x"></i>
-                                    </div>
+                                    <div class="mb-2 text-info"><i class="fas fa-file-invoice-dollar fa-2x"></i></div>
                                     <h6 class="fw-bold text-dark small mb-0">Maaş Bordro</h6>
                                 </div>
                             </div>
@@ -302,6 +304,8 @@
                             <small class="opacity-75 mb-1">{{ d.tarih }}</small>
                             {% if d.oncelik == 'Acil' %}
                                 <span class="badge bg-danger small" style="font-size: 0.6rem;">ACİL</span>
+                            {% elif d.oncelik == 'Bilgi' %}
+                                <span class="badge bg-info text-dark small" style="font-size: 0.6rem;">BİLGİ</span>
                             {% endif %}
                         </div>
                         <span class="fw-bold d-block text-truncate">{{ d.baslik }}</span>
