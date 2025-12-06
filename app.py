@@ -13,35 +13,50 @@ def home():
     
     bugun = datetime.date.today()
     
-    # Varsayılan değerler
     izinli_sayisi = 0
     toplam_personel = 0
     bekleyen_isler = 0
 
     try:
-        # A. Bugün İzinli Olanları Say
-        sql_izinli = "SELECT COUNT(*) FROM Devam WHERE tarih = %s AND durum = 'Izinli'"
+        # A. Bugün İzinli Olanlar
+        sql_izinli = """
+            SELECT COUNT(*) AS sayi
+            FROM Devam
+            WHERE tarih = %s AND durum = 'Izinli'
+        """
         cursor.execute(sql_izinli, (bugun,))
         row_izinli = cursor.fetchone()
         if row_izinli:
-            izinli_sayisi = row_izinli[0]
+            # dict geldiği için key ile erişiyoruz
+            izinli_sayisi = row_izinli["sayi"]
 
         # B. Toplam Aktif Personel Sayısı
-        cursor.execute("SELECT COUNT(*) FROM Personel WHERE aktif_mi = TRUE")
+        sql_toplam = """
+            SELECT COUNT(*) AS sayi
+            FROM Personel
+            WHERE aktif_mi = TRUE
+        """
+        cursor.execute(sql_toplam)
         row_toplam = cursor.fetchone()
         if row_toplam:
-            toplam_personel = row_toplam[0]
+            toplam_personel = row_toplam["sayi"]
 
         # C. Bekleyen İzin Talepleri
-        cursor.execute("SELECT COUNT(*) FROM Izin_Kayit WHERE onay_durumu = 'Beklemede'")
+        sql_bekleyen = """
+            SELECT COUNT(*) AS sayi
+            FROM Izin_Kayit
+            WHERE onay_durumu = 'Beklemede'
+        """
+        cursor.execute(sql_bekleyen)
         row_bekleyen = cursor.fetchone()
         if row_bekleyen:
-            bekleyen_isler = row_bekleyen[0]
+            bekleyen_isler = row_bekleyen["sayi"]
 
     except Exception as e:
-        print(f"İstatistik Hatası: {e}")
-        
-    conn.close()
+        print("İstatistik Hatası:", repr(e))
+
+    finally:
+        conn.close()
 
     stats = {
         "izinli": izinli_sayisi,
@@ -50,7 +65,10 @@ def home():
         "bekleyen": bekleyen_isler
     }
 
+    print("TOPLAM PERSONEL:", toplam_personel)
+
     return render_template("home.html", stats=stats)
+
 
 # --- 2. PERSONEL LİSTELEME ---
 @app.route("/personel")
