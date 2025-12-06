@@ -48,25 +48,83 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Kapat"></button>
     </div>
     <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush mt-2">
+        <div class="list-group list-group-flush">
+            <!-- Ana Menü -->
+            <div class="px-3 pt-3 pb-2">
+                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">ANA MENÜ</small>
+            </div>
+
             <a href="/" class="list-group-item list-group-item-action py-3 border-0 active-menu">
-                <i class="fas fa-home me-3 fa-fw"></i>Genel Bakış
+                <i class="fas fa-chart-line me-3 fa-fw text-primary"></i>Dashboard
             </a>
             <a href="/personel" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-users me-3 fa-fw"></i>Personel Listesi
-            </a>
-            <a href="/personel_ekle" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-user-plus me-3 fa-fw text-success"></i>Personel Ekle
+                <i class="fas fa-users me-3 fa-fw text-primary"></i>Personel Listesi
             </a>
             <a href="/devam" class="list-group-item list-group-item-action py-3 border-0">
                 <i class="fas fa-clock me-3 fa-fw text-warning"></i>Günlük Yoklama
             </a>
             <a href="/izin" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-suitcase me-3 fa-fw text-secondary"></i>İzin İşlemleri
+                <i class="fas fa-umbrella-beach me-3 fa-fw text-info"></i>İzin İşlemleri
             </a>
             <a href="/maas" class="list-group-item list-group-item-action py-3 border-0">
-                <i class="fas fa-wallet me-3 fa-fw text-info"></i>Maaş & Bordro
+                <i class="fas fa-wallet me-3 fa-fw text-success"></i>Maaş & Bordro
             </a>
+
+            <!-- Raporlar Bölümü (YENİ) -->
+            <div class="px-3 pt-3 pb-2">
+                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">RAPORLAR</small>
+            </div>
+
+            <a href="/rapor/personel" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-file-alt me-3 fa-fw text-secondary"></i>Personel Raporu
+            </a>
+            <a href="/rapor/devam" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-calendar-check me-3 fa-fw text-secondary"></i>Devam Raporu
+            </a>
+            <a href="/rapor/izin" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-plane-departure me-3 fa-fw text-secondary"></i>İzin Raporu
+            </a>
+
+            <!-- Ayarlar Bölümü (YENİ) -->
+            <div class="px-3 pt-3 pb-2">
+                <small class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem;">AYARLAR</small>
+            </div>
+
+            <a href="/ayarlar/departmanlar" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-building me-3 fa-fw text-secondary"></i>Departmanlar
+            </a>
+            <a href="/ayarlar/pozisyonlar" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-briefcase me-3 fa-fw text-secondary"></i>Pozisyonlar
+            </a>
+            <a href="/ayarlar/izin-turleri" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-tags me-3 fa-fw text-secondary"></i>İzin Türleri
+            </a>
+            <a href="/ayarlar/duyurular" class="list-group-item list-group-item-action py-3 border-0">
+                <i class="fas fa-bullhorn me-3 fa-fw text-secondary"></i>Duyuru Yönetimi
+            </a>
+        </div>
+
+        <!-- Kullanıcı Profil Kartı (En Alt) -->
+        <div class="mt-auto border-top">
+            <div class="p-3">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 40px; height: 40px;">
+                        YK
+                    </div>
+                    <div>
+                        <div class="fw-bold small text-dark">Yönetici</div>
+                        <small class="text-muted" style="font-size: 0.75rem;">Admin</small>
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="/profil" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-user-cog me-2"></i>Profil Ayarları
+                    </a>
+                    <a href="/cikis" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Çıkış Yap
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -162,7 +220,7 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3 col-6">
+                    <div class="col-md-4 col-6">
                         <a href="/personel" class="text-decoration-none">
                             <div class="text-center p-3 bg-primary bg-opacity-10 rounded h-100 quick-action">
                                 <i class="fas fa-users fa-2x text-primary mb-2"></i>
@@ -170,15 +228,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-3 col-6">
-                        <a href="/personel_ekle" class="text-decoration-none">
-                            <div class="text-center p-3 bg-success bg-opacity-10 rounded h-100 quick-action">
-                                <i class="fas fa-user-plus fa-2x text-success mb-2"></i>
-                                <h6 class="fw-bold text-success mb-0 small">Personel Ekle</h6>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-3 col-6">
+                    <div class="col-md-4 col-6">
                         <a href="/devam" class="text-decoration-none">
                             <div class="text-center p-3 bg-warning bg-opacity-10 rounded h-100 quick-action">
                                 <i class="fas fa-clipboard-check fa-2x text-warning mb-2"></i>
@@ -186,11 +236,11 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-3 col-6">
+                    <div class="col-md-4 col-6">
                         <a href="/izin" class="text-decoration-none">
                             <div class="text-center p-3 bg-info bg-opacity-10 rounded h-100 quick-action">
                                 <i class="fas fa-plane-departure fa-2x text-info mb-2"></i>
-                                <h6 class="fw-bold text-info mb-0 small">İzin Talep</h6>
+                                <h6 class="fw-bold text-info mb-0 small">İzin Talepleri</h6>
                             </div>
                         </a>
                     </div>

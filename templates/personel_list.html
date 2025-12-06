@@ -6,9 +6,43 @@
         <h2 class="fw-bold text-dark mb-1">Personel Listesi</h2>
         <p class="text-muted mb-0">Toplam {{ personeller|length }} kayıtlı çalışan görüntüleniyor.</p>
     </div>
-    <a href="/personel_ekle" class="btn btn-primary rounded-pill px-4 shadow-sm">
-        <i class="fas fa-plus me-2"></i> Yeni Personel
-    </a>
+    <div>
+        <a href="/tum_personel_pdf" class="btn btn-outline-danger rounded-pill px-4 shadow-sm me-2" title="Tüm listeyi PDF olarak indir">
+            <i class="fas fa-file-pdf me-2"></i> Tümünü PDF İndir
+        </a>
+        <a href="/personel_ekle" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            <i class="fas fa-plus me-2"></i> Yeni Personel
+        </a>
+    </div>
+</div>
+
+<!-- Toplu İşlem Çubuğu (Dinamik) -->
+<div id="topluIslemBar" class="card border-0 shadow-sm mb-3 d-none" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong id="secilenSayisi">0</strong> personel seçildi
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-light btn-sm" onclick="topluSil()">
+                    <i class="fas fa-trash-alt me-1"></i> Sil
+                </button>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#topluDepartmanModal">
+                    <i class="fas fa-building me-1"></i> Departman Değiştir
+                </button>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#topluPozisyonModal">
+                    <i class="fas fa-briefcase me-1"></i> Pozisyon Değiştir
+                </button>
+                <button type="button" class="btn btn-light btn-sm" onclick="pdfIndir()">
+                    <i class="fas fa-file-pdf me-1"></i> PDF İndir
+                </button>
+                <button type="button" class="btn btn-outline-light btn-sm" onclick="secimIptal()">
+                    <i class="fas fa-times"></i> İptal
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-4">
@@ -26,7 +60,10 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4">TC Kimlik</th>
+                        <th class="ps-4" style="width: 40px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input" onchange="toggleSelectAll()">
+                        </th>
+                        <th>TC Kimlik</th>
                         <th>Ad Soyad</th>
                         <th>Departman</th>
                         <th>Pozisyon</th>
@@ -38,7 +75,10 @@
                 <tbody id="personelTableBody">
                     {% for p in personeller %}
                     <tr>
-                        <td class="ps-4 text-muted small">{{ p.tc_kimlik_no }}</td>
+                        <td class="ps-4">
+                            <input type="checkbox" class="form-check-input personel-checkbox" value="{{ p.personel_id }}" onchange="updateTopluIslemBar()">
+                        </td>
+                        <td class="text-muted small">{{ p.tc_kimlik_no }}</td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="avatar-circle me-2 bg-primary bg-opacity-10 text-primary fw-bold small">
@@ -83,7 +123,7 @@
     </div>
 </div>
 
-<!-- Düzenleme Modal -->
+<!-- Düzenleme Modal (Mevcut) -->
 <div class="modal fade" id="duzenlemeModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-0 shadow">
@@ -91,7 +131,7 @@
                 <h5 class="modal-title">Personel Düzenle</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="/personel_duzenle" id="duzenlemeForm">
+            <form method="POST" action="/personel_duzenle">
                 <input type="hidden" name="personel_id" id="edit_personel_id">
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -124,7 +164,7 @@
     </div>
 </div>
 
-<!-- Silme Onay Modal -->
+<!-- Silme Onay Modal (Mevcut) -->
 <div class="modal fade" id="silmeModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
         <div class="modal-content border-0 shadow">
@@ -132,7 +172,7 @@
                 <h5 class="modal-title">Personel Sil</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="/personel_sil" id="silmeForm">
+            <form method="POST" action="/personel_sil">
                 <input type="hidden" name="personel_id" id="sil_personel_id">
                 <div class="modal-body p-4 text-center">
                     <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
@@ -142,6 +182,66 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
                     <button type="submit" class="btn btn-danger px-4">Evet, Sil</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toplu Departman Değiştirme Modal (YENİ) -->
+<div class="modal fade" id="topluDepartmanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-building me-2"></i>Toplu Departman Değiştir</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/toplu_departman_degistir" id="topluDepartmanForm">
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3">Seçili <strong id="departmanSecilenSayisi">0</strong> personelin departmanı değiştirilecek.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Yeni Departman</label>
+                        <select name="departman_id" class="form-select" required>
+                            <option value="">Seçiniz...</option>
+                            {% for d in departmanlar %}
+                            <option value="{{ d.departman_id }}">{{ d.departman_adi }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary px-4">Değiştir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toplu Pozisyon Değiştirme Modal (YENİ) -->
+<div class="modal fade" id="topluPozisyonModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-briefcase me-2"></i>Toplu Pozisyon Değiştir</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/toplu_pozisyon_degistir" id="topluPozisyonForm">
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3">Seçili <strong id="pozisyonSecilenSayisi">0</strong> personelin pozisyonu değiştirilecek.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Yeni Pozisyon</label>
+                        <select name="pozisyon_id" class="form-select" required>
+                            <option value="">Seçiniz...</option>
+                            {% for p in pozisyonlar %}
+                            <option value="{{ p.pozisyon_id }}">{{ p.pozisyon_adi }} ({{ p.taban_maas }} ₺)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-success px-4">Değiştir</button>
                 </div>
             </form>
         </div>
@@ -187,7 +287,126 @@
         }
     }
 
-    // Düzenleme Modal Açma
+    // Tümünü Seç/Kaldır
+    function toggleSelectAll() {
+        var selectAll = document.getElementById('selectAll');
+        var checkboxes = document.querySelectorAll('.personel-checkbox');
+
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.closest('tr').style.display !== 'none') {
+                checkbox.checked = selectAll.checked;
+            }
+        });
+
+        updateTopluIslemBar();
+    }
+
+    // Toplu İşlem Çubuğunu Güncelle
+    function updateTopluIslemBar() {
+        var checkboxes = document.querySelectorAll('.personel-checkbox:checked');
+        var count = checkboxes.length;
+
+        var topluIslemBar = document.getElementById('topluIslemBar');
+        var secilenSayisi = document.getElementById('secilenSayisi');
+
+        if (count > 0) {
+            topluIslemBar.classList.remove('d-none');
+            secilenSayisi.textContent = count;
+            document.getElementById('departmanSecilenSayisi').textContent = count;
+            document.getElementById('pozisyonSecilenSayisi').textContent = count;
+        } else {
+            topluIslemBar.classList.add('d-none');
+            document.getElementById('selectAll').checked = false;
+        }
+    }
+
+    // Seçimi İptal Et
+    function secimIptal() {
+        document.getElementById('selectAll').checked = false;
+        document.querySelectorAll('.personel-checkbox').forEach(function(checkbox) {
+            checkbox.checked = false;
+        });
+        updateTopluIslemBar();
+    }
+
+    // Toplu Silme
+    function topluSil() {
+        var checkboxes = document.querySelectorAll('.personel-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Lütfen en az bir personel seçin!');
+            return;
+        }
+
+        if (!confirm(checkboxes.length + ' personeli silmek istediğinize emin misiniz?')) {
+            return;
+        }
+
+        var ids = [];
+        checkboxes.forEach(function(checkbox) {
+            ids.push(checkbox.value);
+        });
+
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/toplu_sil';
+
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'personel_ids';
+        input.value = ids.join(',');
+
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // PDF İndir
+    function pdfIndir() {
+        var checkboxes = document.querySelectorAll('.personel-checkbox:checked');
+        if (checkboxes.length === 0) {
+            alert('Lütfen en az bir personel seçin!');
+            return;
+        }
+
+        var ids = [];
+        checkboxes.forEach(function(checkbox) {
+            ids.push(checkbox.value);
+        });
+
+        window.location.href = '/personel_pdf?ids=' + ids.join(',');
+    }
+
+    // Toplu Departman Form Submit
+    document.getElementById('topluDepartmanForm').addEventListener('submit', function(e) {
+        var checkboxes = document.querySelectorAll('.personel-checkbox:checked');
+        var ids = [];
+        checkboxes.forEach(function(checkbox) {
+            ids.push(checkbox.value);
+        });
+
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'personel_ids';
+        input.value = ids.join(',');
+        this.appendChild(input);
+    });
+
+    // Toplu Pozisyon Form Submit
+    document.getElementById('topluPozisyonForm').addEventListener('submit', function(e) {
+        var checkboxes = document.querySelectorAll('.personel-checkbox:checked');
+        var ids = [];
+        checkboxes.forEach(function(checkbox) {
+            ids.push(checkbox.value);
+        });
+
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'personel_ids';
+        input.value = ids.join(',');
+        this.appendChild(input);
+    });
+
+    // Düzenleme Modal
     function duzenlemeModal(id, ad, soyad, tc, telefon, email) {
         document.getElementById('edit_personel_id').value = id;
         document.getElementById('edit_ad').value = ad;
@@ -200,7 +419,7 @@
         modal.show();
     }
 
-    // Silme Onay Modal Açma
+    // Silme Onay Modal
     function silOnay(id, adSoyad) {
         document.getElementById('sil_personel_id').value = id;
         document.getElementById('sil_personel_adi').textContent = adSoyad;

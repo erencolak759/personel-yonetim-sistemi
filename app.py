@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file
 from db import get_connection
+from utils.pdf_generator import PDFGenerator
 import datetime
 
 app = Flask(__name__)
@@ -152,12 +153,24 @@ def personel_list():
     try:
         cursor.execute(sql)
         personeller = cursor.fetchall()
+
+        # Departman ve Pozisyon listelerini de gönder (Toplu işlem modalleri için)
+        cursor.execute("SELECT * FROM Departman")
+        departmanlar = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Pozisyon")
+        pozisyonlar = cursor.fetchall()
     except Exception as e:
         print(f"Liste Hatası: {e}")
         personeller = []
+        departmanlar = []
+        pozisyonlar = []
 
     conn.close()
-    return render_template("personel_list.html", personeller=personeller)
+    return render_template("personel_list.html",
+                           personeller=personeller,
+                           departmanlar=departmanlar,
+                           pozisyonlar=pozisyonlar)
 
 
 # --- 2C. PERSONEL DÜZENLEME (YENİ!) ---
@@ -212,6 +225,293 @@ def personel_sil():
         conn.close()
 
     return redirect(url_for("personel_list"))
+
+
+# --- 2E. TOPLU SİLME (YENİ!) ---
+@app.route("/toplu_sil", methods=["POST"])
+def toplu_sil():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    personel_ids = request.form.get("personel_ids")
+
+    if not personel_ids:
+        flash("Hiç personel seçilmedi!", "warning")
+        return redirect(url_for("personel_list"))
+
+    ids = personel_ids.split(',')
+
+    try:
+        for pid in ids:
+            sql = "UPDATE Personel SET aktif_mi = FALSE WHERE personel_id = %s"
+            cursor.execute(sql, (pid,))
+
+        conn.commit()
+        flash(f"{len(ids)} personel başarıyla silindi.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Toplu silme hatası: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("personel_list"))
+
+
+# --- 2F. TOPLU DEPARTMAN DEĞİŞTİRME (YENİ!) ---
+@app.route("/toplu_departman_degistir", methods=["POST"])
+def toplu_departman_degistir():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    personel_ids = request.form.get("personel_ids")
+    departman_id = request.form.get("departman_id")
+
+    if not personel_ids or not departman_id:
+        flash("Gerekli bilgiler eksik!", "warning")
+        return redirect(url_for("personel_list"))
+
+    ids = personel_ids.split(',')
+
+    try:
+        for pid in ids:
+            sql = "UPDATE Personel SET departman_id = %s WHERE personel_id = %s"
+            cursor.execute(sql, (departman_id, pid))
+
+        conn.commit()
+        flash(f"{len(ids)} personelin departmanı başarıyla değiştirildi.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Departman değiştirme hatası: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("personel_list"))
+
+
+# --- 2G. TOPLU POZİSYON DEĞİŞTİRME (YENİ!) ---
+@app.route("/toplu_pozisyon_degistir", methods=["POST"])
+def toplu_pozisyon_degistir():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    personel_ids = request.form.get("personel_ids")
+    pozisyon_id = request.form.get("pozisyon_id")
+
+    if not personel_ids or not pozisyon_id:
+        flash("Gerekli bilgiler eksik!", "warning")
+        return redirect(url_for("personel_list"))
+
+    ids = personel_ids.split(',')
+
+    try:
+        for pid in ids:
+            # Eski pozisyonu pasif yap
+            sql_old = "UPDATE Personel_Pozisyon SET guncel_mi = FALSE WHERE personel_id = %s AND guncel_mi = TRUE"
+            cursor.execute(sql_old, (pid,))
+
+            # Yeni pozisyon ekle
+            sql_new = """
+                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
+                VALUES (%s, %s, CURDATE(), TRUE)
+            """
+            cursor.execute(sql_new, (pid, pozisyon_id))
+
+        conn.commit()
+        flash(f"{len(ids)} personelin pozisyonu başarıyla değiştirildi.", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Pozisyon değiştirme hatası: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("personel_list"))
+
+
+# --- 2H. TOPLU PDF İNDİRME (YENİ!) ---
+@app.route("/personel_pdf")
+def personel_pdf():
+    ids = request.args.get('ids', '')
+
+    if not ids:
+        flash("Hiç personel seçilmedi!", "warning")
+        return redirect(url_for("personel_list"))
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Seçili personelleri getir
+        id_list = ids.split(',')
+        placeholders = ','.join(['%s'] * len(id_list))
+
+        sql = f"""
+            SELECT 
+                p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
+                p.ise_giris_tarihi, 
+                d.departman_adi,
+                poz.pozisyon_adi,
+                poz.taban_maas
+            FROM Personel p
+            LEFT JOIN Departman d ON p.departman_id = d.departman_id
+            LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = TRUE
+            LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.personel_id IN ({placeholders}) AND p.aktif_mi = TRUE
+        """
+        cursor.execute(sql, id_list)
+        personeller = cursor.fetchall()
+
+        # PDF oluştur
+        pdf_gen = PDFGenerator()
+        pdf_buffer = pdf_gen.personel_listesi_pdf(personeller)
+
+        conn.close()
+
+        # PDF'i indir
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f'personel_listesi_{datetime.date.today()}.pdf',
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"PDF Hatası: {e}")
+        flash(f"PDF oluşturma hatası: {str(e)}", "danger")
+        conn.close()
+        return redirect(url_for("personel_list"))
+
+
+# --- 2I. TÜM PERSONEL LİSTESİ PDF ---
+@app.route("/tum_personel_pdf")
+def tum_personel_pdf():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        sql = """
+            SELECT 
+                p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
+                p.ise_giris_tarihi, 
+                d.departman_adi,
+                poz.pozisyon_adi,
+                poz.taban_maas
+            FROM Personel p
+            LEFT JOIN Departman d ON p.departman_id = d.departman_id
+            LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = TRUE
+            LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.aktif_mi = TRUE
+            ORDER BY p.personel_id DESC
+        """
+        cursor.execute(sql)
+        personeller = cursor.fetchall()
+
+        # PDF oluştur
+        pdf_gen = PDFGenerator()
+        pdf_buffer = pdf_gen.personel_listesi_pdf(personeller)
+
+        conn.close()
+
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f'tum_personel_{datetime.date.today()}.pdf',
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"PDF Hatası: {e}")
+        flash(f"PDF oluşturma hatası: {str(e)}", "danger")
+        conn.close()
+        return redirect(url_for("personel_list"))
+
+
+# --- 2J. TEK PERSONEL DETAY PDF ---
+@app.route("/personel/<int:personel_id>/pdf")
+def personel_detay_pdf(personel_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Personel bilgileri
+        sql_personel = """
+            SELECT 
+                p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
+                p.dogum_tarihi, p.ise_giris_tarihi, p.adres,
+                d.departman_adi,
+                poz.pozisyon_adi,
+                poz.taban_maas
+            FROM Personel p
+            LEFT JOIN Departman d ON p.departman_id = d.departman_id
+            LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = TRUE
+            LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.personel_id = %s AND p.aktif_mi = TRUE
+        """
+        cursor.execute(sql_personel, (personel_id,))
+        personel = cursor.fetchone()
+
+        if not personel:
+            flash("Personel bulunamadı!", "danger")
+            return redirect(url_for("personel_list"))
+
+        # İzin geçmişi
+        sql_izinler = """
+            SELECT 
+                ik.baslangic_tarihi, ik.bitis_tarihi, ik.gun_sayisi, 
+                ik.onay_durumu, it.izin_adi
+            FROM Izin_Kayit ik
+            JOIN Izin_Turu it ON ik.izin_turu_id = it.izin_turu_id
+            WHERE ik.personel_id = %s
+            ORDER BY ik.baslangic_tarihi DESC
+            LIMIT 10
+        """
+        cursor.execute(sql_izinler, (personel_id,))
+        izinler = cursor.fetchall()
+
+        # Devam özeti
+        sql_devam = """
+            SELECT 
+                durum,
+                COUNT(*) as adet
+            FROM Devam
+            WHERE personel_id = %s 
+            AND tarih >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            GROUP BY durum
+        """
+        cursor.execute(sql_devam, (personel_id,))
+        devam_ozet = cursor.fetchall()
+
+        # Maaş bordroları
+        sql_maas = """
+            SELECT 
+                donem_yil, donem_ay, brut_maas, 
+                toplam_ekleme, toplam_kesinti, net_maas,
+                odeme_tarihi, odendi_mi
+            FROM Maas_Hesap
+            WHERE personel_id = %s
+            ORDER BY donem_yil DESC, donem_ay DESC
+            LIMIT 6
+        """
+        cursor.execute(sql_maas, (personel_id,))
+        maaslar = cursor.fetchall()
+
+        # PDF oluştur
+        pdf_gen = PDFGenerator()
+        pdf_buffer = pdf_gen.personel_detay_pdf(personel, izinler, devam_ozet, maaslar)
+
+        conn.close()
+
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f'personel_detay_{personel["ad"]}_{personel["soyad"]}_{datetime.date.today()}.pdf',
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"PDF Hatası: {e}")
+        flash(f"PDF oluşturma hatası: {str(e)}", "danger")
+        conn.close()
+        return redirect(url_for("personel_list"))
 
 
 # --- 2B. PERSONEL DETAY SAYFASI ---
@@ -535,6 +835,156 @@ def maas():
 
     conn.close()
     return render_template("maas.html", maaslar=maaslar)
+
+
+# --- 9. RAPOR SAYFALARI (YENİ - PLACEHOLDER) ---
+@app.route("/rapor/personel")
+def rapor_personel():
+    flash("Personel raporu sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/rapor/devam")
+def rapor_devam():
+    flash("Devam raporu sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/rapor/izin")
+def rapor_izin():
+    flash("İzin raporu sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+# --- 10. AYARLAR SAYFALARI (YENİ - PLACEHOLDER) ---
+@app.route("/ayarlar/departmanlar")
+def ayarlar_departmanlar():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Departmanları ve her birindeki personel sayısını getir
+        sql = """
+            SELECT 
+                d.departman_id,
+                d.departman_adi,
+                COUNT(p.personel_id) as personel_sayisi
+            FROM Departman d
+            LEFT JOIN Personel p ON d.departman_id = p.departman_id AND p.aktif_mi = TRUE
+            GROUP BY d.departman_id, d.departman_adi
+            ORDER BY d.departman_adi
+        """
+        cursor.execute(sql)
+        departmanlar = cursor.fetchall()
+    except Exception as e:
+        print(f"Departman listesi hatası: {e}")
+        departmanlar = []
+
+    conn.close()
+    return render_template("departmanlar.html", departmanlar=departmanlar)
+
+
+@app.route("/ayarlar/departman_ekle", methods=["POST"])
+def departman_ekle():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    departman_adi = request.form.get("departman_adi")
+
+    try:
+        sql = "INSERT INTO Departman (departman_adi) VALUES (%s)"
+        cursor.execute(sql, (departman_adi,))
+        conn.commit()
+        flash(f"{departman_adi} departmanı başarıyla eklendi!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Hata: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("ayarlar_departmanlar"))
+
+
+@app.route("/ayarlar/departman_duzenle", methods=["POST"])
+def departman_duzenle():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    departman_id = request.form.get("departman_id")
+    departman_adi = request.form.get("departman_adi")
+
+    try:
+        sql = "UPDATE Departman SET departman_adi = %s WHERE departman_id = %s"
+        cursor.execute(sql, (departman_adi, departman_id))
+        conn.commit()
+        flash("Departman başarıyla güncellendi!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Hata: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("ayarlar_departmanlar"))
+
+
+@app.route("/ayarlar/departman_sil", methods=["POST"])
+def departman_sil():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    departman_id = request.form.get("departman_id")
+
+    try:
+        # Önce bu departmanda personel var mı kontrol et
+        cursor.execute("SELECT COUNT(*) as sayi FROM Personel WHERE departman_id = %s AND aktif_mi = TRUE",
+                       (departman_id,))
+        result = cursor.fetchone()
+
+        if result and result['sayi'] > 0:
+            flash("Bu departmanda personel bulunuyor! Önce personelleri başka departmana taşıyın.", "warning")
+        else:
+            sql = "DELETE FROM Departman WHERE departman_id = %s"
+            cursor.execute(sql, (departman_id,))
+            conn.commit()
+            flash("Departman başarıyla silindi!", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Hata: {str(e)}", "danger")
+    finally:
+        conn.close()
+
+    return redirect(url_for("ayarlar_departmanlar"))
+
+
+@app.route("/ayarlar/pozisyonlar")
+def ayarlar_pozisyonlar():
+    flash("Pozisyon yönetimi sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/ayarlar/izin-turleri")
+def ayarlar_izin_turleri():
+    flash("İzin türleri yönetimi sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/ayarlar/duyurular")
+def ayarlar_duyurular():
+    flash("Duyuru yönetimi sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+# --- 11. PROFİL & ÇIKIŞ (YENİ - PLACEHOLDER) ---
+@app.route("/profil")
+def profil():
+    flash("Profil ayarları sayfası yakında eklenecek!", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/cikis")
+def cikis():
+    flash("Çıkış yapıldı! (Login sistemi eklenince aktif olacak)", "success")
+    return redirect(url_for("home"))
 
 
 if __name__ == "__main__":
