@@ -1,0 +1,26 @@
+{
+  "name": "personel-yonetim-sistemi",
+  "version": "1.0.0",
+  "description": "HR Management System - Monorepo with TypeScript Frontend and Python Backend",
+  "private": true,
+  "scripts": {
+    "install:all": "pnpm install && pnpm run install:backend",
+    "install:backend": "cd apps/backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
+    "dev": "concurrently -n 'backend,frontend' -c 'yellow,cyan' 'pnpm run dev:backend' 'pnpm run dev:frontend'",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "cd apps/backend && source venv/bin/activate && python3 app.py",
+    "build": "pnpm --filter frontend build",
+    "lint": "pnpm --filter frontend lint",
+    "preview": "pnpm --filter frontend preview"
+  },
+  "keywords": ["hr", "management", "monorepo", "typescript", "python", "flask", "react"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
