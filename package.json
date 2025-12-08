@@ -5,10 +5,10 @@
   "private": true,
   "scripts": {
     "install:all": "pnpm install && pnpm run install:backend",
-    "install:backend": "cd apps/backend && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt",
-    "dev": "pnpm install:all && concurrently -n 'backend,frontend' -c 'yellow,cyan' 'pnpm run dev:backend' 'pnpm run dev:frontend'",
+    "install:backend": "node ./scripts/start-backend.js --install-only",
+    "dev": "concurrently -n backend,frontend -c yellow,cyan \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:frontend": "pnpm --filter frontend dev",
-    "dev:backend": "cd apps/backend && source venv/bin/activate && python3 app.py",
+    "dev:backend": "node ./scripts/start-backend.js",
     "build": "pnpm --filter frontend build",
     "lint": "pnpm --filter frontend lint",
     "preview": "pnpm --filter frontend preview"
