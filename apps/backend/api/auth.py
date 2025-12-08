@@ -58,11 +58,7 @@ def admin_required(f):
 
 @auth_bp.route("/auth/me", methods=["GET"])
 def get_current_user():
-    """Mevcut oturum bilgilerini döndürür"""
     auth_header = request.headers.get('Authorization')
-    # If there's no Authorization header or it's invalid, don't return an error —
-    # simply indicate the client is not authenticated. This prevents noisy
-    # "Authorization header missing" errors when no user is logged in.
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({'authenticated': False}), 200
 

@@ -21,8 +21,7 @@ export default function Attendance() {
   })
 
   const saveMutation = useMutation({
-    mutationFn: (data: { tarih: string; kayitlar: Record<number, string> }) =>
-      api.post('/attendance', data),
+    mutationFn: (payload: any) => api.post('/attendance', payload),
     onSuccess: () => {
       toast.success('Yoklama kaydedildi')
       queryClient.invalidateQueries({ queryKey: ['attendance'] })
@@ -43,10 +42,12 @@ export default function Attendance() {
   }
 
   const handleSave = () => {
-    const kayitlar: Record<number, string> = {}
-    employees.forEach((emp) => {
-      kayitlar[emp.personel_id] = getStatus(emp.personel_id, emp.bugunku_durum)
-    })
+    // Build an array of records expected by the backend
+    const kayitlar = employees.map((emp) => ({
+      personel_id: emp.personel_id,
+      durum: getStatus(emp.personel_id, emp.bugunku_durum),
+    }))
+
     saveMutation.mutate({ tarih: selectedDate, kayitlar })
   }
 
