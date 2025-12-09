@@ -19,6 +19,7 @@ export default function Employees() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [editModal, setEditModal] = useState<Employee | null>(null)
+  const [modalLoading, setModalLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState<Employee | null>(null)
 
   const { data, isLoading } = useQuery<{
@@ -51,7 +52,7 @@ export default function Employees() {
       return { res, payload }
     },
     onSuccess: async (result: any) => {
-      const { res, payload } = result
+      const { payload } = result
       try {
         if (payload?.account && payload.account.username && payload.account.password) {
           await api.post('/users', {
@@ -200,7 +201,19 @@ export default function Employees() {
                         <Eye size={18} />
                       </Link>
                       <button
-                        onClick={() => setEditModal(employee)}
+                        onClick={async () => {
+                          setModalLoading(true)
+                          try {
+                            const res = await api.get(`/employees/${employee.personel_id}`)
+                            // endpoint returns { personel, pozisyon_gecmisi, izinler }
+                            const payload = res.data?.personel ?? res.data
+                            setEditModal(payload)
+                          } catch (err: any) {
+                            toast.error(err?.response?.data?.error || 'Personel bilgileri alınamadı')
+                          } finally {
+                            setModalLoading(false)
+                          }
+                        }}
                         className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Edit2 size={18} />
@@ -246,6 +259,11 @@ export default function Employees() {
                 <X size={20} />
               </button>
             </div>
+            {modalLoading ? (
+              <div className="p-6 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
+              </div>
+            ) : (
             <form
               onSubmit={(e) => {
                   e.preventDefault()
@@ -308,6 +326,20 @@ export default function Employees() {
                 />
               </div>
               <div>
+                <label className="label">Doğum Tarihi</label>
+                <input
+                  name="dogum_tarihi"
+                  type="date"
+                  defaultValue={
+                    editModal.dogum_tarihi
+                      ? new Date(editModal.dogum_tarihi).toISOString().split('T')[0]
+                      : ''
+                  }
+                  className="input"
+                  required
+                />
+              </div>
+              <div>
                 <label className="label">Kullanıcı Adı (opsiyonel)</label>
                 <input name="kullanici_adi" className="input" placeholder="hesap kullanıcı adı" />
               </div>
@@ -339,6 +371,7 @@ export default function Employees() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

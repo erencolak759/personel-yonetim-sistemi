@@ -12,7 +12,6 @@ employee_bp = Blueprint('employee', __name__, url_prefix='/api')
 @employee_bp.route("/employees/form-data", methods=["GET"])
 @login_required
 def employee_form_data():
-    """Personel formu için departman ve pozisyon listelerini döndürür"""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -23,9 +22,14 @@ def employee_form_data():
             for row in cursor.fetchall()
         ]
 
-        cursor.execute("SELECT pozisyon_id, pozisyon_adi FROM Pozisyon ORDER BY pozisyon_adi")
+        cursor.execute("SELECT pozisyon_id, pozisyon_adi, departman_id, taban_maas FROM Pozisyon ORDER BY pozisyon_adi")
         pozisyonlar = [
-            {"pozisyon_id": row["pozisyon_id"], "pozisyon_adi": row["pozisyon_adi"]}
+            {
+                "pozisyon_id": row["pozisyon_id"],
+                "pozisyon_adi": row["pozisyon_adi"],
+                "departman_id": row.get("departman_id") if isinstance(row, dict) else row[2],
+                "taban_maas": row.get("taban_maas") if isinstance(row, dict) else row[3],
+            }
             for row in cursor.fetchall()
         ]
 
@@ -253,22 +257,18 @@ def employee_edit(personel_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            UPDATE Personel 
-            SET ad = %s, soyad = %s, tc_kimlik_no = %s, telefon = %s, email = %s, 
-                adres = %s, dogum_tarihi = %s, departman_id = %s
-            WHERE personel_id = %s
-        """, (
-            data.get('ad'),
-            data.get('soyad'),
-            data.get('tc_kimlik_no'),
-            data.get('telefon'),
-            data.get('email'),
-            data.get('adres'),
-            data.get('dogum_tarihi'),
-            data.get('departman_id'),
-            personel_id
-        ))
+        allowed_fields = ['ad', 'soyad', 'tc_kimlik_no', 'telefon', 'email', 'adres', 'dogum_tarihi', 'departman_id']
+        sql_parts = []
+        params = []
+        for field in allowed_fields:
+            if field in data:
+                sql_parts.append(f"{field} = %s")
+                params.append(data.get(field))
+
+        if sql_parts:
+            params.append(personel_id)
+            sql = f"UPDATE Personel SET {', '.join(sql_parts)} WHERE personel_id = %s"
+            cursor.execute(sql, params)
 
         if data.get('pozisyon_id'):
             cursor.execute("""

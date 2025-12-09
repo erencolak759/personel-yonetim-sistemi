@@ -5,3 +5,4 @@ reportlab>=4.0.0
 pyjwt>=2.0.0
 python-dotenv>=1.0.0
 werkzeug>=2.0.0
+cryptography>=3.0.0
