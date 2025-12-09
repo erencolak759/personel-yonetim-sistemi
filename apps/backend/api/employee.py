@@ -61,12 +61,12 @@ def employee_list():
     params = []
 
     if search:
-        sql += " AND (p.ad LIKE ? OR p.soyad LIKE ? OR p.tc_kimlik_no LIKE ?)"
+        sql += " AND (p.ad LIKE %s OR p.soyad LIKE %s OR p.tc_kimlik_no LIKE %s)"
         search_param = f"%{search}%"
         params.extend([search_param, search_param, search_param])
 
     if department:
-        sql += " AND p.departman_id = ?"
+        sql += " AND p.departman_id = %s"
         params.append(department)
 
     sql += " ORDER BY p.personel_id DESC"
@@ -119,7 +119,7 @@ def employee_detail(personel_id):
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
             LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
-            WHERE p.personel_id = ?
+            WHERE p.personel_id = %s
         """, (personel_id,))
         row = cursor.fetchone()
 
@@ -148,7 +148,7 @@ def employee_detail(personel_id):
             SELECT pp.baslangic_tarihi, pp.bitis_tarihi, poz.pozisyon_adi
             FROM Personel_Pozisyon pp
             JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
-            WHERE pp.personel_id = ?
+            WHERE pp.personel_id = %s
             ORDER BY pp.baslangic_tarihi DESC
         """, (personel_id,))
         pozisyon_gecmisi = [{
@@ -162,7 +162,7 @@ def employee_detail(personel_id):
                    ik.onay_durumu, it.izin_adi
             FROM Izin_Kayit ik
             JOIN Izin_Turu it ON ik.izin_turu_id = it.izin_turu_id
-            WHERE ik.personel_id = ?
+            WHERE ik.personel_id = %s
             ORDER BY ik.baslangic_tarihi DESC
             LIMIT 10
         """, (personel_id,))
@@ -195,7 +195,7 @@ def employee_add():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT personel_id FROM Personel WHERE tc_kimlik_no = ?", (data.get('tc_kimlik_no'),))
+        cursor.execute("SELECT personel_id FROM Personel WHERE tc_kimlik_no = %s", (data.get('tc_kimlik_no'),))
         if cursor.fetchone():
             return jsonify({'error': 'Bu TC kimlik numarası zaten kayıtlı'}), 400
         kullanici_adi = data.get('kullanici_adi')
@@ -203,13 +203,13 @@ def employee_add():
         rol = data.get('rol') or 'employee'
         if not kullanici_adi or not sifre:
             return jsonify({'error': 'Kullanıcı adı ve şifre zorunludur'}), 400
-        cursor.execute("SELECT kullanici_id FROM Kullanici WHERE kullanici_adi = ?", (kullanici_adi,))
+        cursor.execute("SELECT kullanici_id FROM Kullanici WHERE kullanici_adi = %s", (kullanici_adi,))
         if cursor.fetchone():
             return jsonify({'error': 'Bu kullanıcı adı zaten alınmış'}), 400
 
         cursor.execute("""
             INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, adres, ise_giris_tarihi, departman_id, aktif_mi)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
         """, (
             data.get('tc_kimlik_no'),
             data.get('ad'),
@@ -226,13 +226,13 @@ def employee_add():
         if data.get('pozisyon_id'):
             cursor.execute("""
                 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (?, ?, date('now'), 1)
+                VALUES (%s, %s, CURDATE(), 1)
             """, (personel_id, data.get('pozisyon_id')))
 
         password_hash = generate_password_hash(sifre)
         cursor.execute('''
             INSERT INTO Kullanici (kullanici_adi, sifre_hash, email, rol, personel_id, ilk_giris, aktif_mi)
-            VALUES (?, ?, ?, ?, ?, 1, 1)
+            VALUES (%s, %s, %s, %s, %s, 1, 1)
         ''', (kullanici_adi, password_hash, data.get('email'), rol, personel_id))
 
         conn.commit()
@@ -255,9 +255,9 @@ def employee_edit(personel_id):
     try:
         cursor.execute("""
             UPDATE Personel 
-            SET ad = ?, soyad = ?, tc_kimlik_no = ?, telefon = ?, email = ?, 
-                adres = ?, dogum_tarihi = ?, departman_id = ?
-            WHERE personel_id = ?
+            SET ad = %s, soyad = %s, tc_kimlik_no = %s, telefon = %s, email = %s, 
+                adres = %s, dogum_tarihi = %s, departman_id = %s
+            WHERE personel_id = %s
         """, (
             data.get('ad'),
             data.get('soyad'),
@@ -272,12 +272,12 @@ def employee_edit(personel_id):
 
         if data.get('pozisyon_id'):
             cursor.execute("""
-                UPDATE Personel_Pozisyon SET guncel_mi = 0, bitis_tarihi = date('now') 
-                WHERE personel_id = ? AND guncel_mi = 1
+                UPDATE Personel_Pozisyon SET guncel_mi = 0, bitis_tarihi = CURDATE() 
+                WHERE personel_id = %s AND guncel_mi = 1
             """, (personel_id,))
             cursor.execute("""
                 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (?, ?, date('now'), 1)
+                VALUES (%s, %s, CURDATE(), 1)
             """, (personel_id, data.get('pozisyon_id')))
 
         conn.commit()
@@ -320,11 +320,11 @@ def employee_update_me():
         sql_parts = []
         params = []
         for k, v in updates.items():
-            sql_parts.append(f"{k} = ?")
+            sql_parts.append(f"{k} = %s")
             params.append(v)
 
         params.append(personel_id)
-        sql = f"UPDATE Personel SET {', '.join(sql_parts)} WHERE personel_id = ?"
+        sql = f"UPDATE Personel SET {', '.join(sql_parts)} WHERE personel_id = %s"
         cursor.execute(sql, params)
         conn.commit()
         return jsonify({'message': 'Kişisel bilgiler güncellendi'})
@@ -342,8 +342,8 @@ def employee_delete(personel_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE Personel SET aktif_mi = 0 WHERE personel_id = ?", (personel_id,))
-        cursor.execute("UPDATE Kullanici SET aktif_mi = 0 WHERE personel_id = ?", (personel_id,))
+        cursor.execute("UPDATE Personel SET aktif_mi = 0 WHERE personel_id = %s", (personel_id,))
+        cursor.execute("DELETE FROM Kullanici WHERE personel_id = %s", (personel_id,))
         conn.commit()
         return jsonify({'message': 'Personel başarıyla silindi'})
     except Exception as e:
@@ -367,8 +367,8 @@ def employee_bulk_delete():
 
     try:
         for pid in personel_ids:
-            cursor.execute("UPDATE Personel SET aktif_mi = 0 WHERE personel_id = ?", (pid,))
-            cursor.execute("UPDATE Kullanici SET aktif_mi = 0 WHERE personel_id = ?", (pid,))
+            cursor.execute("UPDATE Personel SET aktif_mi = 0 WHERE personel_id = %s", (pid,))
+            cursor.execute("DELETE FROM Kullanici WHERE personel_id = %s", (pid,))
         
         conn.commit()
         return jsonify({'message': f'{len(personel_ids)} personel başarıyla silindi'})
@@ -394,7 +394,7 @@ def employee_bulk_department():
 
     try:
         for pid in personel_ids:
-            cursor.execute("UPDATE Personel SET departman_id = ? WHERE personel_id = ?", (departman_id, pid))
+            cursor.execute("UPDATE Personel SET departman_id = %s WHERE personel_id = %s", (departman_id, pid))
         
         conn.commit()
         return jsonify({'message': f'{len(personel_ids)} personelin departmanı değiştirildi'})
@@ -420,10 +420,10 @@ def employee_bulk_position():
 
     try:
         for pid in personel_ids:
-            cursor.execute("UPDATE Personel_Pozisyon SET guncel_mi = 0 WHERE personel_id = ? AND guncel_mi = 1", (pid,))
+            cursor.execute("UPDATE Personel_Pozisyon SET guncel_mi = 0 WHERE personel_id = %s AND guncel_mi = 1", (pid,))
             cursor.execute("""
                 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (?, ?, date('now'), 1)
+                VALUES (%s, %s, CURDATE(), 1)
             """, (pid, pozisyon_id))
         
         conn.commit()

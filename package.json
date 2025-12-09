@@ -4,8 +4,8 @@
   "description": "HR Management System - Monorepo with TypeScript Frontend and Python Backend",
   "private": true,
   "scripts": {
-    "install:all": "pnpm install && pnpm run install:backend",
-    "install:backend": "node ./scripts/start-backend.js --install-only",
+    "install-lin": "bash ./scripts/setup.sh",
+    "install-win": "pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/setup.ps1 || powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/setup.ps1",
     "dev": "concurrently -n backend,frontend -c yellow,cyan \"pnpm run dev:backend\" \"pnpm run dev:frontend\"",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "node ./scripts/start-backend.js",

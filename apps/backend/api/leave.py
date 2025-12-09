@@ -102,7 +102,7 @@ def create_leave():
     try:
         cursor.execute("""
             INSERT INTO Izin_Kayit (personel_id, izin_turu_id, baslangic_tarihi, bitis_tarihi, gun_sayisi, onay_durumu)
-            VALUES (?, ?, ?, ?, ?, 'Beklemede')
+            VALUES (%s, %s, %s, %s, %s, 'Beklemede')
         """, (personel_id, izin_turu_id, baslangic, bitis, gun_sayisi))
         conn.commit()
         return jsonify({'message': 'İzin talebi oluşturuldu', 'id': cursor.lastrowid}), 201
@@ -120,7 +120,7 @@ def leave_approve(izin_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Onaylandi' WHERE izin_kayit_id = ?", (izin_id,))
+        cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Onaylandi' WHERE izin_kayit_id = %s", (izin_id,))
         conn.commit()
         return jsonify({'message': 'İzin talebi onaylandı'})
     except Exception as e:
@@ -137,7 +137,7 @@ def leave_reject(izin_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Reddedildi' WHERE izin_kayit_id = ?", (izin_id,))
+        cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Reddedildi' WHERE izin_kayit_id = %s", (izin_id,))
         conn.commit()
         return jsonify({'message': 'İzin talebi reddedildi'})
     except Exception as e:

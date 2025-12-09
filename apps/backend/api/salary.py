@@ -28,11 +28,11 @@ def salary_list():
         params = []
         
         if yil:
-            sql += " AND mh.donem_yil = ?"
+            sql += " AND mh.donem_yil = %s"
             params.append(yil)
         
         if ay:
-            sql += " AND mh.donem_ay = ?"
+            sql += " AND mh.donem_ay = %s"
             params.append(ay)
         
         sql += " ORDER BY mh.donem_yil DESC, mh.donem_ay DESC, p.ad"
@@ -76,7 +76,7 @@ def salary_detail(maas_id):
             FROM Maas_Hesap mh
             JOIN Personel p ON mh.personel_id = p.personel_id
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
-            WHERE mh.maas_hesap_id = ?
+            WHERE mh.maas_hesap_id = %s
         """, (maas_id,))
         row = cursor.fetchone()
         
@@ -87,7 +87,7 @@ def salary_detail(maas_id):
             SELECT md.*, mb.bilesen_adi, mb.tip
             FROM Maas_Detay md
             JOIN Maas_Bileseni mb ON md.bilesen_id = mb.bilesen_id
-            WHERE md.maas_hesap_id = ?
+            WHERE md.maas_hesap_id = %s
         """, (maas_id,))
         detaylar = [{
             'bilesen_adi': d['bilesen_adi'],
@@ -128,7 +128,7 @@ def salary_create():
     try:
         cursor.execute("""
             INSERT INTO Maas_Hesap (personel_id, donem_yil, donem_ay, brut_maas, toplam_ekleme, toplam_kesinti, net_maas, odendi_mi)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 0)
         """, (
             data.get('personel_id'),
             data.get('donem_yil'),
@@ -155,8 +155,8 @@ def salary_pay(maas_id):
     
     try:
         cursor.execute("""
-            UPDATE Maas_Hesap SET odendi_mi = 1, odeme_tarihi = date('now')
-            WHERE maas_hesap_id = ?
+            UPDATE Maas_Hesap SET odendi_mi = 1, odeme_tarihi = CURDATE()
+            WHERE maas_hesap_id = %s
         """, (maas_id,))
         conn.commit()
         return jsonify({'message': 'Maaş ödendi olarak işaretlendi'})

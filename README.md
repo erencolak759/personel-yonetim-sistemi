@@ -55,6 +55,51 @@ personel-yonetim-sistemi/
 - pnpm 8+
 - Python 3.10+
 
+### Quick Install (one-liners)
+
+The following commands clone the repository, run the appropriate setup script for your platform, and prepare the application for development.
+
+```bash
+# macOS/Linux: clone and setup in one line (copy-paste and run)
+bash -c "git clone https://github.com/erencolak759/personel-yonetim-sistemi.git && cd personel-yonetim-sistemi && bash scripts/setup.sh"
+
+# Windows (PowerShell): clone and setup in one line
+powershell -Command "git clone https://github.com/erencolak759/personel-yonetim-sistemi.git; Set-Location personel-yonetim-sistemi; .\\scripts\\setup.ps1"
+```
+
+### Manual Install
+- macOS / Linux (zsh / bash):
+
+```bash
+# Clone repository
+git clone https://github.com/erencolak759/personel-yonetim-sistemi.git
+cd personel-yonetim-sistemi
+
+# Run the setup script (creates venv, installs Python dependencies, runs pnpm install, copies .env.example -> .env if missing,
+# and initializes the database unless SKIP_DB_INIT=1 is set)
+bash scripts/setup.sh
+```
+
+- Windows (PowerShell):
+
+```powershell
+# Clone repository
+git clone https://github.com/erencolak759/personel-yonetim-sistemi.git
+cd personel-yonetim-sistemi
+
+# Run the setup script (may require admin rights for ExecutionPolicy the first time)
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```
+
+Notes:
+- If a remote database (e.g., Railway) is already set up and you want to skip the database initialization/seed steps, use the `SKIP_DB_INIT=1` environment variable. Example:
+
+```bash
+SKIP_DB_INIT=1 bash scripts/setup.sh
+```
+
+- If you want to skip automatic pip installation (e.g., in CI environments), use `SKIP_PIP_INSTALL=1`.
+
 ### Fast Start
 
 You can run the app with:

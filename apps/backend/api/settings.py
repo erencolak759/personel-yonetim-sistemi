@@ -50,7 +50,7 @@ def department_add():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("INSERT INTO Departman (departman_adi) VALUES (?)", (departman_adi,))
+        cursor.execute("INSERT INTO Departman (departman_adi) VALUES (%s)", (departman_adi,))
         conn.commit()
         return jsonify({'message': 'Departman eklendi', 'id': cursor.lastrowid}), 201
     except Exception as e:
@@ -73,7 +73,7 @@ def department_edit(dept_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("UPDATE Departman SET departman_adi = ? WHERE departman_id = ?", (departman_adi, dept_id))
+        cursor.execute("UPDATE Departman SET departman_adi = %s WHERE departman_id = %s", (departman_adi, dept_id))
         conn.commit()
         return jsonify({'message': 'Departman güncellendi'})
     except Exception as e:
@@ -90,13 +90,13 @@ def department_delete(dept_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT COUNT(*) as sayi FROM Personel WHERE departman_id = ? AND aktif_mi = 1", (dept_id,))
+        cursor.execute("SELECT COUNT(*) as sayi FROM Personel WHERE departman_id = %s AND aktif_mi = 1", (dept_id,))
         result = cursor.fetchone()
 
         if result and result['sayi'] > 0:
             return jsonify({'error': 'Bu departmanda personel bulunuyor! Önce personelleri başka departmana taşıyın.'}), 400
 
-        cursor.execute("DELETE FROM Departman WHERE departman_id = ?", (dept_id,))
+        cursor.execute("DELETE FROM Departman WHERE departman_id = %s", (dept_id,))
         conn.commit()
         return jsonify({'message': 'Departman silindi'})
     except Exception as e:
@@ -160,7 +160,7 @@ def position_add():
     try:
         cursor.execute("""
             INSERT INTO Pozisyon (pozisyon_adi, departman_id, taban_maas) 
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
         """, (pozisyon_adi, departman_id or None, taban_maas))
         conn.commit()
         return jsonify({'message': 'Pozisyon eklendi', 'id': cursor.lastrowid}), 201
@@ -188,8 +188,8 @@ def position_edit(pos_id):
 
     try:
         cursor.execute("""
-            UPDATE Pozisyon SET pozisyon_adi = ?, departman_id = ?, taban_maas = ?
-            WHERE pozisyon_id = ?
+            UPDATE Pozisyon SET pozisyon_adi = %s, departman_id = %s, taban_maas = %s
+            WHERE pozisyon_id = %s
         """, (pozisyon_adi, departman_id or None, taban_maas, pos_id))
         conn.commit()
         return jsonify({'message': 'Pozisyon güncellendi'})
@@ -209,14 +209,14 @@ def position_delete(pos_id):
     try:
         cursor.execute("""
             SELECT COUNT(*) as sayi FROM Personel_Pozisyon 
-            WHERE pozisyon_id = ? AND guncel_mi = 1
+            WHERE pozisyon_id = %s AND guncel_mi = 1
         """, (pos_id,))
         result = cursor.fetchone()
 
         if result and result['sayi'] > 0:
             return jsonify({'error': 'Bu pozisyonda personel bulunuyor!'}), 400
 
-        cursor.execute("DELETE FROM Pozisyon WHERE pozisyon_id = ?", (pos_id,))
+        cursor.execute("DELETE FROM Pozisyon WHERE pozisyon_id = %s", (pos_id,))
         conn.commit()
         return jsonify({'message': 'Pozisyon silindi'})
     except Exception as e:
@@ -277,7 +277,7 @@ def leave_type_add():
     try:
         cursor.execute("""
             INSERT INTO Izin_Turu (izin_adi, yillik_hak_gun, ucretli_mi) 
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
         """, (izin_adi, max_gun, ucretli_mi))
         conn.commit()
         return jsonify({'message': 'İzin türü eklendi', 'id': cursor.lastrowid}), 201
@@ -305,8 +305,8 @@ def leave_type_edit(type_id):
 
     try:
         cursor.execute("""
-            UPDATE Izin_Turu SET izin_adi = ?, yillik_hak_gun = ?, ucretli_mi = ?
-            WHERE izin_turu_id = ?
+            UPDATE Izin_Turu SET izin_adi = %s, yillik_hak_gun = %s, ucretli_mi = %s
+            WHERE izin_turu_id = %s
         """, (izin_adi, max_gun, ucretli_mi, type_id))
         conn.commit()
         return jsonify({'message': 'İzin türü güncellendi'})
@@ -324,13 +324,13 @@ def leave_type_delete(type_id):
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT COUNT(*) as sayi FROM Izin_Kayit WHERE izin_turu_id = ?", (type_id,))
+        cursor.execute("SELECT COUNT(*) as sayi FROM Izin_Kayit WHERE izin_turu_id = %s", (type_id,))
         result = cursor.fetchone()
 
         if result and result['sayi'] > 0:
             return jsonify({'error': 'Bu izin türü kullanılıyor, silinemez!'}), 400
 
-        cursor.execute("DELETE FROM Izin_Turu WHERE izin_turu_id = ?", (type_id,))
+        cursor.execute("DELETE FROM Izin_Turu WHERE izin_turu_id = %s", (type_id,))
         conn.commit()
         return jsonify({'message': 'İzin türü silindi'})
     except Exception as e:

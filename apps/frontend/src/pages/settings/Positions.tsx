@@ -172,45 +172,102 @@ export default function Positions() {
                 </td>
               </tr>
             ) : (
-              positions.map((position) => (
-                <tr key={position.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <Briefcase className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <span className="font-medium text-gray-900">{position.ad}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                    {getDepartmentName(position.departman_id)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                    {formatCurrency(position.min_maas)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                    {formatCurrency(position.max_maas)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openModal(position)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Düzenle"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(position.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              // Group positions by department for clearer view
+              departments.map((dept) => {
+                const deptPositions = positions.filter((p) => p.departman_id === dept.id)
+                if (deptPositions.length === 0) return null
+                return (
+                  <>
+                    <tr key={`hdr-${dept.id}`} className="bg-gray-100">
+                      <td colSpan={5} className="px-6 py-2 text-sm font-semibold text-gray-700">
+                        {dept.ad}
+                      </td>
+                    </tr>
+                    {deptPositions.map((position) => (
+                      <tr key={position.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                              <Briefcase className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">{position.ad}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                          {dept.ad}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                          {formatCurrency(position.min_maas)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                          {formatCurrency(position.max_maas)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openModal(position)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Düzenle"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(position.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Sil"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                )
+              })
+            )}
+            {/* Unassigned positions (no department) */}
+            {positions.some((p) => !p.departman_id) && (
+              <>
+                <tr className="bg-gray-100">
+                  <td colSpan={5} className="px-6 py-2 text-sm font-semibold text-gray-700">
+                    Atanmamış / Diğer
                   </td>
                 </tr>
-              ))
+                {positions.filter((p) => !p.departman_id).map((position) => (
+                  <tr key={`un-${position.id}`} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <Briefcase className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <span className="font-medium text-gray-900">{position.ad}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">-</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">{formatCurrency(position.min_maas)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">{formatCurrency(position.max_maas)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openModal(position)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Düzenle"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(position.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </>
             )}
           </tbody>
         </table>

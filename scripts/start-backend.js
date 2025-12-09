@@ -3,7 +3,6 @@ const fs = require('fs')
 const path = require('path')
 
 function whichPython() {
-  // Prefer python3, fallback to python
   const tryCmd = (cmd) => {
     try {
       const res = spawnSync(cmd, ['--version'], { stdio: 'ignore' })
@@ -34,13 +33,13 @@ async function main() {
   const installOnly = args.includes('--install-only')
   const forceInstall = args.includes('--install')
 
-  // Create venv if not exists
+  let venvCreated = false
   if (!fs.existsSync(venvDir)) {
     console.log('Creating virtual environment...')
     runSync(pythonCmd, ['-m', 'venv', 'venv'], { cwd: backendDir })
+    venvCreated = true
   }
 
-  // Determine venv python path
   const venvPython = process.platform === 'win32'
     ? path.join(venvDir, 'Scripts', 'python.exe')
     : path.join(venvDir, 'bin', 'python')
@@ -49,14 +48,9 @@ async function main() {
     throw new Error('Virtualenv python executable not found at ' + venvPython)
   }
 
-  // Only install requirements when explicitly requested. This avoids
-  // reinstalling packages on every `pnpm dev` invocation. The script will
-  // still create the virtualenv if it does not exist, but will not run
-  // `pip install -r requirements.txt` unless `--install` or
-  // `--install-only` is passed.
   const reqFile = path.join(backendDir, 'requirements.txt')
-
-  if (forceInstall || installOnly) {
+  const skipPip = process.env.SKIP_PIP_INSTALL === '1'
+  if (forceInstall || installOnly || (venvCreated && !skipPip)) {
     console.log('Installing backend requirements...')
     runSync(venvPython, ['-m', 'pip', 'install', '--upgrade', 'pip'], { cwd: backendDir })
     if (fs.existsSync(reqFile)) {
@@ -73,7 +67,6 @@ async function main() {
     return
   }
 
-  // Run the Flask app using venv python
   console.log('Starting backend using venv python:', venvPython)
   const server = spawn(venvPython, ['app.py'], { cwd: backendDir, stdio: 'inherit' })
 

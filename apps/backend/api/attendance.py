@@ -23,7 +23,7 @@ def attendance():
             dv.durum as bugunku_durum
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
-        LEFT JOIN Devam dv ON p.personel_id = dv.personel_id AND dv.tarih = ?
+        LEFT JOIN Devam dv ON p.personel_id = dv.personel_id AND dv.tarih = %s
         WHERE p.aktif_mi = 1
         ORDER BY p.ad, p.soyad
     """
@@ -68,8 +68,8 @@ def attendance_save():
             if not personel_id or not durum:
                 continue
 
-            cursor.execute("DELETE FROM Devam WHERE personel_id = ? AND tarih = ?", (personel_id, secilen_tarih))
-            cursor.execute("INSERT INTO Devam (personel_id, tarih, durum) VALUES (?, ?, ?)", 
+            cursor.execute("DELETE FROM Devam WHERE personel_id = %s AND tarih = %s", (personel_id, secilen_tarih))
+            cursor.execute("INSERT INTO Devam (personel_id, tarih, durum) VALUES (%s, %s, %s)", 
                           (personel_id, secilen_tarih, durum))
 
         conn.commit()
@@ -96,12 +96,12 @@ def attendance_stats():
                 COUNT(CASE WHEN durum = 'Normal' THEN 1 END) as geldi,
                 COUNT(CASE WHEN durum = 'Izinli' THEN 1 END) as izinli,
                 COUNT(CASE WHEN durum = 'Devamsiz' THEN 1 END) as devamsiz
-            FROM Devam WHERE tarih = ?
+            FROM Devam WHERE tarih = %s
         """, (bugun,))
         row = cursor.fetchone()
         
-        cursor.execute("SELECT COUNT(*) FROM Personel WHERE aktif_mi = 1")
-        toplam = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) as cnt FROM Personel WHERE aktif_mi = 1")
+        toplam = cursor.fetchone()['cnt']
         
         return jsonify({
             'tarih': bugun,

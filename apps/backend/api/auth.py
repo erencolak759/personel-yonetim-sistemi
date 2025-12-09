@@ -89,7 +89,7 @@ def login():
     try:
         cursor.execute("""
             SELECT kullanici_id, kullanici_adi, sifre_hash, rol, personel_id, ilk_giris, aktif_mi, email
-            FROM Kullanici WHERE kullanici_adi = ?
+            FROM Kullanici WHERE kullanici_adi = %s
         """, (username,))
         row = cursor.fetchone()
         
@@ -104,7 +104,7 @@ def login():
         if not check_password_hash(user['sifre_hash'], password):
             return jsonify({'error': 'Geçersiz kullanıcı adı veya şifre'}), 401
         
-        cursor.execute("UPDATE Kullanici SET son_giris = ? WHERE kullanici_id = ?",
+        cursor.execute("UPDATE Kullanici SET son_giris = %s WHERE kullanici_id = %s",
                       (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), user['kullanici_id']))
         conn.commit()
         
@@ -167,17 +167,17 @@ def change_password():
 
         user_id = payload.get('user_id')
 
-        cursor.execute("SELECT sifre_hash FROM Kullanici WHERE kullanici_id = ?", (user_id,))
+        cursor.execute("SELECT sifre_hash FROM Kullanici WHERE kullanici_id = %s", (user_id,))
         row = cursor.fetchone()
 
         if not row or not check_password_hash(row['sifre_hash'], current_password):
             return jsonify({'error': 'Mevcut şifre yanlış'}), 401
 
         new_hash = generate_password_hash(new_password)
-        cursor.execute("UPDATE Kullanici SET sifre_hash = ?, ilk_giris = 0 WHERE kullanici_id = ?",
+        cursor.execute("UPDATE Kullanici SET sifre_hash = %s, ilk_giris = 0 WHERE kullanici_id = %s",
                       (new_hash, user_id))
         conn.commit()
-        cursor.execute("SELECT kullanici_id, kullanici_adi, rol, personel_id, email, ilk_giris FROM Kullanici WHERE kullanici_id = ?", (user_id,))
+        cursor.execute("SELECT kullanici_id, kullanici_adi, rol, personel_id, email, ilk_giris FROM Kullanici WHERE kullanici_id = %s", (user_id,))
         updated = cursor.fetchone()
         if updated:
             u = dict(updated)
@@ -258,7 +258,7 @@ def create_user():
     cursor = conn.cursor()
     
     try:
-        cursor.execute("SELECT kullanici_id FROM Kullanici WHERE kullanici_adi = ?", (kullanici_adi,))
+        cursor.execute("SELECT kullanici_id FROM Kullanici WHERE kullanici_adi = %s", (kullanici_adi,))
         if cursor.fetchone():
             return jsonify({'error': 'Bu kullanıcı adı zaten kullanılıyor'}), 400
         
@@ -266,7 +266,7 @@ def create_user():
         
         cursor.execute("""
             INSERT INTO Kullanici (kullanici_adi, email, sifre_hash, rol, personel_id, aktif_mi, ilk_giris)
-            VALUES (?, ?, ?, ?, ?, 1, 1)
+            VALUES (%s, %s, %s, %s, %s, 1, 1)
         """, (kullanici_adi, email or None, sifre_hash, rol, personel_id))
         conn.commit()
         
@@ -288,26 +288,26 @@ def update_user(user_id):
         params = []
         
         if 'email' in data:
-            updates.append("email = ?")
+            updates.append("email = %s")
             params.append(data['email'] or None)
         
         if 'rol' in data:
-            updates.append("rol = ?")
+            updates.append("rol = %s")
             params.append(data['rol'])
         
         if 'aktif_mi' in data:
-            updates.append("aktif_mi = ?")
+            updates.append("aktif_mi = %s")
             params.append(1 if data['aktif_mi'] else 0)
         
         if 'sifre' in data and data['sifre']:
-            updates.append("sifre_hash = ?")
+            updates.append("sifre_hash = %s")
             params.append(generate_password_hash(data['sifre']))
         
         if not updates:
             return jsonify({'error': 'Güncellenecek alan bulunamadı'}), 400
         
         params.append(user_id)
-        sql = f"UPDATE Kullanici SET {', '.join(updates)} WHERE kullanici_id = ?"
+        sql = f"UPDATE Kullanici SET {', '.join(updates)} WHERE kullanici_id = %s"
         cursor.execute(sql, params)
         conn.commit()
         
@@ -336,7 +336,7 @@ def delete_user(user_id):
     cursor = conn.cursor()
     
     try:
-        cursor.execute("UPDATE Kullanici SET aktif_mi = 0 WHERE kullanici_id = ?", (user_id,))
+        cursor.execute("UPDATE Kullanici SET aktif_mi = 0 WHERE kullanici_id = %s", (user_id,))
         conn.commit()
         return jsonify({'message': 'Kullanıcı devre dışı bırakıldı'})
     finally:

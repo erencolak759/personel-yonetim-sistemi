@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
@@ -49,6 +49,28 @@ export default function AddEmployee() {
 
     mutation.mutate(personelData)
   }
+
+  // Local state to filter positions based on selected department
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('')
+  const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
+  const [selectedPozisyonId, setSelectedPozisyonId] = useState<string>('')
+
+  useEffect(() => {
+    if (!data) return
+    if (selectedDepartment) {
+      const filtered = data.pozisyonlar.filter((p) => String(p.departman_id) === String(selectedDepartment))
+      setFilteredPositions(filtered)
+      if (filtered.length === 1) {
+        // Auto-select when only one position exists for the department
+        const only = filtered[0]
+        setSelectedPozisyonId(String((only as any).pozisyon_id ?? (only as any).id ?? ''))
+      } else {
+        setSelectedPozisyonId('')
+      }
+    } else {
+      setFilteredPositions(data.pozisyonlar || [])
+    }
+  }, [data, selectedDepartment])
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -123,7 +145,13 @@ export default function AddEmployee() {
             </div>
             <div>
               <label className="label">Departman</label>
-              <select name="departman_id" className="input" required>
+              <select
+                name="departman_id"
+                className="input"
+                required
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+              >
                 <option value="">Seçiniz...</option>
                 {data?.departmanlar?.map((d) => (
                   <option key={d.departman_id} value={d.departman_id}>
@@ -134,11 +162,17 @@ export default function AddEmployee() {
             </div>
             <div>
               <label className="label">Pozisyon (Maaş Otomatik)</label>
-              <select name="pozisyon_id" className="input" required>
+              <select
+                name="pozisyon_id"
+                className="input"
+                required
+                value={selectedPozisyonId}
+                onChange={(e) => setSelectedPozisyonId(e.target.value)}
+              >
                 <option value="">Seçiniz...</option>
-                {data?.pozisyonlar?.map((p) => (
-                  <option key={p.pozisyon_id} value={p.pozisyon_id}>
-                    {p.pozisyon_adi} (Taban: {p.taban_maas ? Number(p.taban_maas).toLocaleString('tr-TR') + ' ₺' : '-'})
+                {filteredPositions?.map((p) => (
+                  <option key={(p as any).pozisyon_id ?? p.id} value={(p as any).pozisyon_id ?? p.id}>
+                    {(p as any).pozisyon_adi ?? p.ad} (Taban: {p.taban_maas ? Number(p.taban_maas).toLocaleString('tr-TR') + ' ₺' : '-'})
                   </option>
                 ))}
               </select>
