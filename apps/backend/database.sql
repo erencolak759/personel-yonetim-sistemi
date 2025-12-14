@@ -171,3 +171,20 @@ INSERT INTO Personel (tc_kimlik_no, ad, soyad, dogum_tarihi, telefon, email, ise
 INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi) VALUES
 (1, 1, '2020-01-10', 1),
 (2, 2, '2019-03-15', 1);
+
+-- Seed data for salary components
+INSERT INTO Maas_Bileseni (bilesen_adi, bilesen_tipi, sabit_mi, varsayilan_tutar) VALUES
+-- Kesintiler (Deductions)
+('SGK Isci Payi', 'Kesinti', 1, 14.0),
+('SGK Isveren Payi', 'Kesinti', 1, 20.5),
+('Issizlik Sigortasi Isci', 'Kesinti', 1, 1.0),
+('Issizlik Sigortasi Isveren', 'Kesinti', 1, 2.0),
+('Gelir Vergisi', 'Kesinti', 1, 15.0),
+('Damga Vergisi', 'Kesinti', 1, 0.759),
+-- Eklemeler (Additions)
+('Yemek Yardimi', 'Ekleme', 0, 0),
+('Yol Yardimi', 'Ekleme', 0, 0),
+('Prim', 'Ekleme', 0, 0),
+('Ikramiye', 'Ekleme', 0, 0),
+('Fazla Mesai', 'Ekleme', 0, 0),
+('Cocuk Yardimi', 'Ekleme', 0, 0);

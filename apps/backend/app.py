@@ -14,6 +14,12 @@ register_blueprints(app)
 init_db()
 seed_db()
 
-
 if __name__ == "__main__":
+    # Route'ları göster
+    print("\n=== REGISTERED ROUTES ===")
+    for rule in app.url_map.iter_rules():
+        methods = ', '.join(sorted(rule.methods - {'HEAD', 'OPTIONS'}))
+        print(f"{rule.endpoint:30s} {methods:20s} {rule.rule}")
+    print("=========================\n")
+
     app.run(debug=Config.DEBUG, port=8080, host="0.0.0.0")
