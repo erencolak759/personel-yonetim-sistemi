@@ -67,10 +67,18 @@ def get_current_user():
 
     if not user_data:
         return jsonify({'authenticated': False}), 200
+    user = {
+        'kullanici_id': user_data.get('user_id'),
+        'kullanici_adi': user_data.get('username'),
+        'email': user_data.get('email'),
+        'rol': user_data.get('role'),
+        'personel_id': user_data.get('personel_id'),
+        'ilk_giris': user_data.get('ilk_giris')
+    }
 
     return jsonify({
         'authenticated': True,
-        'user': user_data
+        'user': user
     })
 
 

@@ -50,7 +50,6 @@ export default function AddEmployee() {
     mutation.mutate(personelData)
   }
 
-  // Local state to filter positions based on selected department
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
   const [selectedPozisyonId, setSelectedPozisyonId] = useState<string>('')
@@ -61,7 +60,6 @@ export default function AddEmployee() {
       const filtered = data.pozisyonlar.filter((p) => String(p.departman_id) === String(selectedDepartment))
       setFilteredPositions(filtered)
       if (filtered.length === 1) {
-        // Auto-select when only one position exists for the department
         const only = filtered[0]
         setSelectedPozisyonId(String((only as any).pozisyon_id ?? (only as any).id ?? ''))
       } else {
@@ -74,7 +72,6 @@ export default function AddEmployee() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => navigate('/admin/employees')}

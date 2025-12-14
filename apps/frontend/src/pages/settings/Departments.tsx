@@ -142,8 +142,6 @@ export default function Departments() {
           </div>
         )}
       </div>
-
-      {/* Add Modal */}
       {showAddModal && (
         <Modal
           title="Yeni Departman"
@@ -179,8 +177,6 @@ export default function Departments() {
           </form>
         </Modal>
       )}
-
-      {/* Edit Modal */}
       {editDept && (
         <Modal title="Departman Düzenle" onClose={() => setEditDept(null)}>
           <form
@@ -221,8 +217,6 @@ export default function Departments() {
           </form>
         </Modal>
       )}
-
-      {/* Delete Modal */}
       {deleteDept && (
         <Modal title="Departman Sil" onClose={() => setDeleteDept(null)}>
           <div className="text-center mb-6">

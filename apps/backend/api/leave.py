@@ -3,6 +3,7 @@ from utils.db import get_connection
 from api.auth import login_required, admin_required
 from api.auth import decode_token
 from datetime import datetime
+from datetime import timedelta
 
 leave_bp = Blueprint('leave', __name__, url_prefix='/api')
 
@@ -12,8 +13,12 @@ leave_bp = Blueprint('leave', __name__, url_prefix='/api')
 def leaves():
     conn = get_connection()
     cursor = conn.cursor()
-
     filtre = request.args.get('filtre', 'tumunu')
+    archived = request.args.get('archived', '0')
+    try:
+        aktif_flag = 0 if str(archived) in ['1', 'true', 'True'] else 1
+    except Exception:
+        aktif_flag = 1
 
     try:
         if filtre == 'bekleyen':
@@ -33,9 +38,10 @@ def leaves():
             JOIN Personel p ON k.personel_id = p.personel_id
             JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
             {where_clause}
+            AND p.aktif_mi = %s
             ORDER BY k.baslangic_tarihi DESC
         """
-        cursor.execute(sql_list)
+        cursor.execute(sql_list, (aktif_flag,))
         rows = cursor.fetchall()
 
         izinler = [{
@@ -55,6 +61,48 @@ def leaves():
     except Exception as e:
         print(f"İzin listesi hatası: {e}")
         return jsonify([])
+    finally:
+        conn.close()
+
+
+@leave_bp.route("/leaves/pdf", methods=["GET"])
+@login_required
+def leaves_pdf():
+    filtre = request.args.get('filtre', 'tumunu')
+    archived = request.args.get('archived', '0')
+    aktif_flag = 0 if str(archived) in ['1', 'true', 'True'] else 1
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        where_clause = ''
+        if filtre == 'bekleyen':
+            where_clause = "WHERE k.onay_durumu = 'Beklemede'"
+        elif filtre == 'onaylanan':
+            where_clause = "WHERE k.onay_durumu = 'Onaylandi'"
+        elif filtre == 'reddedilen':
+            where_clause = "WHERE k.onay_durumu = 'Reddedildi'"
+
+        sql = f"""
+            SELECT k.baslangic_tarihi as bas, k.bitis_tarihi as bit, k.gun_sayisi, k.onay_durumu,
+                   p.ad, p.soyad, t.izin_adi
+            FROM Izin_Kayit k
+            JOIN Personel p ON k.personel_id = p.personel_id
+            JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
+            {where_clause}
+            AND p.aktif_mi = %s
+            ORDER BY k.baslangic_tarihi DESC
+        """
+        cursor.execute(sql, (aktif_flag,))
+        rows = cursor.fetchall()
+        gen = PDFGenerator()
+        buffer = gen.izin_raporu_pdf(rows, filtre=filtre)
+        fname = f"izin_raporu_{filtre}.pdf"
+        return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=fname)
+    except Exception as e:
+        print('İzin PDF hatası:', e)
+        return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
 
@@ -100,10 +148,72 @@ def create_leave():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("""
-            INSERT INTO Izin_Kayit (personel_id, izin_turu_id, baslangic_tarihi, bitis_tarihi, gun_sayisi, onay_durumu)
-            VALUES (%s, %s, %s, %s, %s, 'Beklemede')
-        """, (personel_id, izin_turu_id, baslangic, bitis, gun_sayisi))
+        cursor.execute("SELECT izin_adi, yillik_hak_gun, ucretli_mi FROM Izin_Turu WHERE izin_turu_id = %s", (izin_turu_id,))
+        izin_turu = cursor.fetchone()
+        max_gun = izin_turu.get('yillik_hak_gun') if izin_turu else None
+        ucretli = bool(izin_turu.get('ucretli_mi')) if izin_turu else False
+        def get_unpaid_type_id():
+            cursor.execute("SELECT izin_turu_id FROM Izin_Turu WHERE ucretli_mi = 0 AND izin_adi LIKE %s LIMIT 1", ('%Ücretsiz%',))
+            row = cursor.fetchone()
+            if row:
+                return row['izin_turu_id']
+            cursor.execute("INSERT INTO Izin_Turu (izin_adi, yillik_hak_gun, ucretli_mi) VALUES (%s, %s, %s)", ('Ücretsiz İzin', 0, 0))
+            return cursor.lastrowid
+        if ucretli and max_gun and int(max_gun) > 0:
+            try:
+                start_dt = datetime.strptime(baslangic, '%Y-%m-%d')
+            except Exception:
+                start_dt = datetime.strptime(baslangic, '%Y-%m-%d')
+            year_start = datetime(start_dt.year, 1, 1).strftime('%Y-%m-%d')
+            year_end = datetime(start_dt.year, 12, 31).strftime('%Y-%m-%d')
+            cursor.execute("""
+                SELECT COALESCE(SUM(gun_sayisi),0) AS used
+                FROM Izin_Kayit ik
+                JOIN Izin_Turu it ON ik.izin_turu_id = it.izin_turu_id
+                WHERE ik.personel_id = %s AND ik.izin_turu_id = %s
+                  AND NOT (ik.bitis_tarihi < %s OR ik.baslangic_tarihi > %s)
+                  AND ik.onay_durumu != 'Reddedildi'
+            """, (personel_id, izin_turu_id, year_start, year_end))
+            used_row = cursor.fetchone()
+            used_days = int(used_row.get('used', 0) or 0)
+
+            remaining_paid = int(max_gun) - used_days
+            if remaining_paid <= 0:
+                unpaid_days = int(gun_sayisi)
+                paid_days = 0
+            elif int(gun_sayisi) <= remaining_paid:
+                paid_days = int(gun_sayisi)
+                unpaid_days = 0
+            else:
+                paid_days = remaining_paid
+                unpaid_days = int(gun_sayisi) - paid_days
+
+            if paid_days > 0:
+                paid_start = datetime.strptime(baslangic, '%Y-%m-%d')
+                paid_end = (paid_start + timedelta(days=paid_days - 1)).strftime('%Y-%m-%d')
+                cursor.execute("""
+                    INSERT INTO Izin_Kayit (personel_id, izin_turu_id, baslangic_tarihi, bitis_tarihi, gun_sayisi, onay_durumu)
+                    VALUES (%s, %s, %s, %s, %s, 'Beklemede')
+                """, (personel_id, izin_turu_id, paid_start.strftime('%Y-%m-%d'), paid_end, paid_days))
+
+            if unpaid_days > 0:
+                unpaid_type_id = get_unpaid_type_id()
+                if paid_days > 0:
+                    unpaid_start_dt = datetime.strptime(paid_end, '%Y-%m-%d') + timedelta(days=1)
+                else:
+                    unpaid_start_dt = datetime.strptime(baslangic, '%Y-%m-%d')
+                unpaid_start = unpaid_start_dt.strftime('%Y-%m-%d')
+                unpaid_end_dt = datetime.strptime(bitis, '%Y-%m-%d')
+                unpaid_end = unpaid_end_dt.strftime('%Y-%m-%d')
+                cursor.execute("""
+                    INSERT INTO Izin_Kayit (personel_id, izin_turu_id, baslangic_tarihi, bitis_tarihi, gun_sayisi, onay_durumu)
+                    VALUES (%s, %s, %s, %s, %s, 'Beklemede')
+                """, (personel_id, unpaid_type_id, unpaid_start, unpaid_end, unpaid_days))
+        else:
+            cursor.execute("""
+                INSERT INTO Izin_Kayit (personel_id, izin_turu_id, baslangic_tarihi, bitis_tarihi, gun_sayisi, onay_durumu)
+                VALUES (%s, %s, %s, %s, %s, 'Beklemede')
+            """, (personel_id, izin_turu_id, baslangic, bitis, gun_sayisi))
         conn.commit()
         return jsonify({'message': 'İzin talebi oluşturuldu', 'id': cursor.lastrowid}), 201
     except Exception as e:
@@ -140,6 +250,44 @@ def leave_reject(izin_id):
         cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Reddedildi' WHERE izin_kayit_id = %s", (izin_id,))
         conn.commit()
         return jsonify({'message': 'İzin talebi reddedildi'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
+@leave_bp.route("/leaves/<int:izin_id>/cancel", methods=["POST"])
+@login_required
+def leave_cancel(izin_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Oturum açmanız gerekiyor'}), 401
+
+    token = auth_header.split(' ')[1]
+    payload = decode_token(token)
+    if not payload:
+        return jsonify({'error': 'Geçersiz veya süresi dolmuş token'}), 401
+
+    try:
+        cursor.execute("SELECT personel_id, onay_durumu FROM Izin_Kayit WHERE izin_kayit_id = %s", (izin_id,))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'error': 'İzin kaydı bulunamadı'}), 404
+
+        if row.get('onay_durumu') != 'Beklemede':
+            return jsonify({'error': 'Sadece beklemedeki izinler iptal edilebilir'}), 400
+        caller_role = payload.get('role')
+        caller_personel = payload.get('personel_id')
+        if caller_role != 'admin' and int(caller_personel) != int(row.get('personel_id')):
+            return jsonify({'error': 'Bu izni iptal etme yetkiniz yok'}), 403
+
+        cursor.execute("UPDATE Izin_Kayit SET onay_durumu = 'Iptal' WHERE izin_kayit_id = %s", (izin_id,))
+        conn.commit()
+        return jsonify({'message': 'İzin talebi iptal edildi'})
     except Exception as e:
         conn.rollback()
         return jsonify({'error': str(e)}), 500

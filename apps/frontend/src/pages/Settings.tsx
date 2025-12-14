@@ -48,7 +48,6 @@ export default function Settings() {
       </div>
 
       <div className="flex gap-6">
-        {/* Sidebar for admin */}
         <div className="w-64 shrink-0">
           <nav className="card p-2 space-y-1">
             {navItems.map((item) => (
@@ -67,8 +66,6 @@ export default function Settings() {
             ))}
           </nav>
         </div>
-
-        {/* Content for admin */}
         <div className="flex-1">
           <Routes>
             <Route index element={<Navigate to="departments" replace />} />
