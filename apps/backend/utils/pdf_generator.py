@@ -3,22 +3,32 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
+import os
 import datetime
-
-
 class PDFGenerator:
 
     def __init__(self):
         self.buffer = BytesIO()
         self.pagesize = A4
         self.styles = getSampleStyleSheet()
+        self.font_name = self._register_font()
+        if self.font_name:
+            for k in ['Normal', 'BodyText', 'Heading1', 'Heading2']:
+                if k in self.styles:
+                    try:
+                        self.styles[k].fontName = self.font_name
+                    except Exception:
+                        pass
 
         self.title_style = ParagraphStyle(
             'CustomTitle',
             parent=self.styles['Heading1'],
             fontSize=18,
             textColor=colors.HexColor('#0d6efd'),
+            fontName=self.font_name or self.styles['Heading1'].fontName,
             spaceAfter=30,
             alignment=1
         )
@@ -28,8 +38,38 @@ class PDFGenerator:
             parent=self.styles['Heading2'],
             fontSize=14,
             textColor=colors.HexColor('#495057'),
+            fontName=self.font_name or self.styles['Heading2'].fontName,
             spaceAfter=12
         )
+
+    def _register_font(self):
+        candidates = [
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+            '/Library/Fonts/Arial Unicode.ttf',
+            '/Library/Fonts/DejaVu Sans.ttf',
+            'C:\\Windows\\Fonts\\arial.ttf'
+        ]
+
+        for path in candidates:
+            try:
+                if os.path.exists(path):
+                    font_name = 'CustomSans'
+                    pdfmetrics.registerFont(TTFont(font_name, path))
+                    return font_name
+            except Exception:
+                continue
+
+        env_path = os.environ.get('DEJAVU_TTF_PATH')
+        if env_path and os.path.exists(env_path):
+            try:
+                font_name = 'CustomSans'
+                pdfmetrics.registerFont(TTFont(font_name, env_path))
+                return font_name
+            except Exception:
+                pass
+
+        return None
 
     def _header_footer(self, canvas, doc):
         canvas.saveState()
@@ -94,6 +134,11 @@ class PDFGenerator:
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
         ]))
 
+        if self.font_name:
+            table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+            ]))
+
         elements.append(table)
 
         doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
@@ -147,6 +192,10 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                devam_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(devam_table)
             elements.append(Spacer(1, 0.5 * cm))
 
@@ -171,6 +220,10 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                izin_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(izin_table)
             elements.append(Spacer(1, 0.5 * cm))
 
@@ -198,6 +251,10 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                maas_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(maas_table)
 
         doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
@@ -294,6 +351,80 @@ class PDFGenerator:
         ]))
 
         elements.append(table)
+
+        doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
+
+        self.buffer.seek(0)
+        return self.buffer
+
+    def payrolls_pdf(self, maaslar, yil=None, ay=None):
+        doc = SimpleDocTemplate(
+            self.buffer,
+            pagesize=landscape(A4),
+            rightMargin=2 * cm,
+            leftMargin=2 * cm,
+            topMargin=3 * cm,
+            bottomMargin=2 * cm
+        )
+
+        elements = []
+
+        title_text = "Maaş Bordroları"
+        if yil and ay:
+            title_text += f" - {ay}/{yil}"
+        title = Paragraph(title_text, self.title_style)
+        elements.append(title)
+        elements.append(Spacer(1, 0.5 * cm))
+        data = [['Personel', 'Departman', 'Brüt', 'Eklemeler', 'Kesintiler', 'Net', 'Durum']]
+
+        for m in maaslar:
+            durum = 'Ödendi' if m.get('odendi_mi') else 'Bekliyor'
+            data.append([
+                f"{m.get('ad','')} {m.get('soyad','')}",
+                m.get('departman_adi', '-'),
+                f"{m.get('brut_maas', 0):,.2f} ₺",
+                f"+{m.get('toplam_ekleme', 0):,.2f} ₺",
+                f"-{m.get('toplam_kesinti', 0):,.2f} ₺",
+                f"{m.get('net_maas', 0):,.2f} ₺",
+                durum,
+            ])
+
+        table = Table(data, colWidths=[6 * cm, 4 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+        ]))
+
+        if self.font_name:
+            table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+            ]))
+
+        elements.append(table)
+        for m in maaslar:
+            elements.append(Spacer(1, 0.3 * cm))
+            elements.append(Paragraph(f"Detaylar: {m.get('ad','')} {m.get('soyad','')} - {m.get('donem_ay')}/{m.get('donem_yil')}", self.heading_style))
+            detay_data = [['Bileşen', 'Tutar']]
+            for d in m.get('detaylar', []):
+                tut = d.get('tutar', 0) or 0
+                prefix = '+' if (d.get('tip') == 'ekleme') else '-'
+                detay_data.append([d.get('bilesen_adi', ''), f"{prefix}{float(tut):,.2f} ₺"])
+
+            dt = Table(detay_data, colWidths=[10 * cm, 4 * cm])
+            dt.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6c757d')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+            ]))
+            if self.font_name:
+                dt.setStyle(TableStyle([('FONTNAME', (0, 0), (-1, -1), self.font_name)]))
+            elements.append(dt)
 
         doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
 
