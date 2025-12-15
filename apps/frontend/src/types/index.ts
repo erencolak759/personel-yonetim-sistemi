@@ -1,6 +1,7 @@
 export interface User {
   kullanici_id: number
   kullanici_adi: string
+  ilk_giris: boolean
   email: string | null
   rol: 'admin' | 'employee'
   personel_id: number | null
@@ -36,11 +37,10 @@ export interface Position {
   id: number
   ad: string
   departman_id: number | null
-  min_maas: number | null
-  max_maas: number | null
+  taban_maas: number | null
   pozisyon_id?: number
   pozisyon_adi?: string
-  taban_maas?: number
+  
 }
 
 export interface Attendance {

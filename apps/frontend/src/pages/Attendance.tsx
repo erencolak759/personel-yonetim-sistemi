@@ -11,6 +11,7 @@ export default function Attendance() {
     new Date().toISOString().split('T')[0]
   )
   const [statuses, setStatuses] = useState<Record<number, string>>({})
+  const [overtimes, setOvertimes] = useState<Record<number, number>>({})
 
   const { data, isLoading } = useQuery<{ personeller: AttendanceRecord[] } | null>({
     queryKey: ['attendance', selectedDate],
@@ -41,11 +42,20 @@ export default function Attendance() {
     setStatuses((prev) => ({ ...prev, [personel_id]: status }))
   }
 
+  const getOvertime = (personel_id: number, current: number | null) => {
+    if (overtimes[personel_id] !== undefined) return overtimes[personel_id]
+    return current || 0
+  }
+
+  const handleOvertimeChange = (personel_id: number, hours: number) => {
+    setOvertimes((prev) => ({ ...prev, [personel_id]: hours }))
+  }
+
   const handleSave = () => {
-    // Build an array of records expected by the backend
     const kayitlar = employees.map((emp) => ({
       personel_id: emp.personel_id,
       durum: getStatus(emp.personel_id, emp.bugunku_durum),
+      ek_mesai_saat: getOvertime(emp.personel_id, (emp as any).ek_mesai_saat || 0),
     }))
 
     saveMutation.mutate({ tarih: selectedDate, kayitlar })
@@ -61,7 +71,6 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Günlük Yoklama</h1>
@@ -78,14 +87,13 @@ export default function Attendance() {
               onChange={(e) => {
                 setSelectedDate(e.target.value)
                 setStatuses({})
+                setOvertimes({})
               }}
               className="border-0 bg-transparent focus:outline-none font-medium"
             />
           </div>
         </div>
       </div>
-
-      {/* Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -99,6 +107,9 @@ export default function Attendance() {
                 </th>
                 <th className="text-center py-4 px-6 text-sm font-medium text-slate-600">
                   Durum Seçimi
+                </th>
+                <th className="text-center py-4 px-6 text-sm font-medium text-slate-600">
+                  Ek Mesai (saat)
                 </th>
               </tr>
             </thead>
@@ -148,6 +159,16 @@ export default function Attendance() {
                       />
                     </div>
                   </td>
+                  <td className="py-4 px-6 text-center">
+                    <input
+                      type="number"
+                      min={0}
+                      step={0.25}
+                      value={getOvertime(emp.personel_id, (emp as any).ek_mesai_saat || 0)}
+                      onChange={(e) => handleOvertimeChange(emp.personel_id, Number(e.target.value))}
+                      className="input w-28 text-center"
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -159,8 +180,6 @@ export default function Attendance() {
             Aktif personel bulunamadı
           </div>
         )}
-
-        {/* Footer */}
         <div className="border-t border-slate-200 p-4 flex justify-end">
           <button
             onClick={handleSave}

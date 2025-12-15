@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   X,
+  Archive,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -19,6 +20,7 @@ const adminNavigation = [
   { name: 'Yoklama', href: '/admin/attendance', icon: Calendar },
   { name: 'İzinler', href: '/admin/leaves', icon: Umbrella },
   { name: 'Maaşlar', href: '/admin/salary', icon: Wallet },
+  { name: 'Arşiv', href: '/admin/archive', icon: Archive },
   { name: 'Ayarlar', href: '/admin/settings', icon: Settings },
 ]
 
@@ -39,15 +41,12 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -108,10 +107,7 @@ export default function Layout() {
           </button>
         </div>
       </aside>
-
-      {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top navbar */}
         <header className="sticky top-0 z-30 bg-white border-b border-slate-200">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6">
             <button
@@ -126,8 +122,6 @@ export default function Layout() {
             <div className="flex items-center gap-4" />
           </div>
         </header>
-
-        {/* Page content */}
         <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>

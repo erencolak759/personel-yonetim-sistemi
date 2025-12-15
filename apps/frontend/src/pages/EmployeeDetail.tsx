@@ -49,6 +49,24 @@ interface EmployeeDetailData {
 export default function EmployeeDetail() {
   const { id } = useParams()
 
+  const downloadEmployeeDetailPdf = async (personelId?: string | undefined) => {
+    if (!personelId) return
+    try {
+      const res = await api.get(`/employees/${personelId}/report`, { responseType: 'blob' })
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `personel_${personelId}_detay.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('PDF indirilemedi', err)
+    }
+  }
+
   const { data, isLoading } = useQuery<EmployeeDetailData>({
     queryKey: ['employee', id],
     queryFn: async () => {
@@ -56,9 +74,9 @@ export default function EmployeeDetail() {
       const resp = response.data || {}
       return {
         personel: resp.personel,
-        devam_ozet: [],
+        devam_ozet: resp.devam_ozet || [],
         izinler: resp.izinler || [],
-        maaslar: [],
+        maaslar: resp.maaslar || [],
       }
     },
   })
@@ -83,7 +101,6 @@ export default function EmployeeDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link
           to="/admin/employees"
@@ -91,6 +108,11 @@ export default function EmployeeDetail() {
         >
           <ArrowLeft size={24} className="text-slate-600" />
         </Link>
+        <div className="ml-auto">
+          <button onClick={() => downloadEmployeeDetailPdf(id)} className="btn btn-outline">
+            <Calendar size={16} /> PDF
+          </button>
+        </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
             {personel.ad} {personel.soyad}
@@ -103,9 +125,7 @@ export default function EmployeeDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Profile */}
         <div className="space-y-6">
-          {/* Profile Card */}
           <div className="card p-6 text-center">
             <div className="w-24 h-24 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
               {personel.ad[0]}
@@ -138,7 +158,6 @@ export default function EmployeeDetail() {
             </div>
           </div>
 
-          {/* Personal Info */}
           <div className="card">
             <div className="px-6 py-4 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -160,9 +179,7 @@ export default function EmployeeDetail() {
           </div>
         </div>
 
-        {/* Right Column - Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Attendance Summary */}
           <div className="card">
             <div className="px-6 py-4 border-b border-slate-200">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -201,7 +218,6 @@ export default function EmployeeDetail() {
             </div>
           </div>
 
-          {/* Leave History */}
           <div className="card">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -275,7 +291,6 @@ export default function EmployeeDetail() {
             </div>
           </div>
 
-          {/* Salary History */}
           <div className="card">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">

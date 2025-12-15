@@ -3,22 +3,32 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from io import BytesIO
+import os
 import datetime
-
-
 class PDFGenerator:
 
     def __init__(self):
         self.buffer = BytesIO()
         self.pagesize = A4
         self.styles = getSampleStyleSheet()
+        self.font_name = self._register_font()
+        if self.font_name:
+            for k in ['Normal', 'BodyText', 'Heading1', 'Heading2']:
+                if k in self.styles:
+                    try:
+                        self.styles[k].fontName = self.font_name
+                    except Exception:
+                        pass
 
         self.title_style = ParagraphStyle(
             'CustomTitle',
             parent=self.styles['Heading1'],
             fontSize=18,
             textColor=colors.HexColor('#0d6efd'),
+            fontName=self.font_name or self.styles['Heading1'].fontName,
             spaceAfter=30,
             alignment=1
         )
@@ -28,19 +38,49 @@ class PDFGenerator:
             parent=self.styles['Heading2'],
             fontSize=14,
             textColor=colors.HexColor('#495057'),
+            fontName=self.font_name or self.styles['Heading2'].fontName,
             spaceAfter=12
         )
+
+    def _register_font(self):
+        candidates = [
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+            '/Library/Fonts/Arial Unicode.ttf',
+            '/Library/Fonts/DejaVu Sans.ttf',
+            'C:\\Windows\\Fonts\\arial.ttf'
+        ]
+
+        for path in candidates:
+            try:
+                if os.path.exists(path):
+                    font_name = 'CustomSans'
+                    pdfmetrics.registerFont(TTFont(font_name, path))
+                    return font_name
+            except Exception:
+                continue
+
+        env_path = os.environ.get('DEJAVU_TTF_PATH')
+        if env_path and os.path.exists(env_path):
+            try:
+                font_name = 'CustomSans'
+                pdfmetrics.registerFont(TTFont(font_name, env_path))
+                return font_name
+            except Exception:
+                pass
+
+        return None
 
     def _header_footer(self, canvas, doc):
         canvas.saveState()
 
         canvas.setFont('Helvetica-Bold', 16)
         canvas.setFillColor(colors.HexColor('#0d6efd'))
-        canvas.drawString(2 * cm, A4[1] - 2 * cm, "HR YÃ¶netim Sistemi")
+        canvas.drawString(2 * cm, A4[1] - 2 * cm, "HR Yönetim Sistemi")
 
         canvas.setFont('Helvetica', 9)
         canvas.setFillColor(colors.grey)
-        canvas.drawString(2 * cm, 1.5 * cm, f"OluÅŸturulma: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        canvas.drawString(2 * cm, 1.5 * cm, f"Oluşturulma: {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}")
         canvas.drawRightString(A4[0] - 2 * cm, 1.5 * cm, f"Sayfa {doc.page}")
 
         canvas.restoreState()
@@ -67,7 +107,7 @@ class PDFGenerator:
         elements.append(summary)
         elements.append(Spacer(1, 0.5 * cm))
 
-        data = [['TC Kimlik', 'Ad Soyad', 'Departman', 'Pozisyon', 'MaaÅŸ', 'Telefon', 'Ä°ÅŸe GiriÅŸ']]
+        data = [['TC Kimlik', 'Ad Soyad', 'Departman', 'Pozisyon', 'Maaş', 'Telefon', 'İşe Giriş']]
 
         for p in personeller:
             data.append([
@@ -93,6 +133,11 @@ class PDFGenerator:
             ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
         ]))
+
+        if self.font_name:
+            table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+            ]))
 
         elements.append(table)
 
@@ -122,20 +167,20 @@ class PDFGenerator:
         <b>TC Kimlik:</b> {personel.get('tc_kimlik_no', '-')}<br/>
         <b>Departman:</b> {personel.get('departman_adi', '-')}<br/>
         <b>Pozisyon:</b> {personel.get('pozisyon_adi', '-')}<br/>
-        <b>MaaÅŸ:</b> {personel.get('taban_maas', 0)} TL<br/>
+        <b>Maaş:</b> {personel.get('taban_maas', 0)} TL<br/>
         <b>Telefon:</b> {personel.get('telefon', '-')}<br/>
         <b>Email:</b> {personel.get('email', '-')}<br/>
-        <b>Ä°ÅŸe GiriÅŸ:</b> {personel.get('ise_giris_tarihi', '-')}
+        <b>İşe Giriş:</b> {personel.get('ise_giris_tarihi', '-')}
         """
         elements.append(Paragraph(info_text, self.styles['Normal']))
         elements.append(Spacer(1, 1 * cm))
 
         if devam_ozet:
-            elements.append(Paragraph("Devam Durumu (Son 30 GÃ¼n)", self.heading_style))
-            devam_data = [['Durum', 'GÃ¼n SayÄ±sÄ±']]
+            elements.append(Paragraph("Devam Durumu (Son 30 Gün)", self.heading_style))
+            devam_data = [['Durum', 'Gün Sayısı']]
             for d in devam_ozet:
-                durum_tr = {'Normal': 'Var', 'Izinli': 'Ä°zinli', 'Devamsiz': 'DevamsÄ±z'}.get(d.get('durum'),
-                                                                                               d.get('durum'))
+                durum_tr = {'Normal': 'Var', 'Izinli': 'İzinli', 'Devamsiz': 'Devamsız'}.get(d.get('durum'),
+                                                                                             d.get('durum'))
                 devam_data.append([durum_tr, str(d.get('adet', 0))])
 
             devam_table = Table(devam_data, colWidths=[8 * cm, 4 * cm])
@@ -147,12 +192,16 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                devam_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(devam_table)
             elements.append(Spacer(1, 0.5 * cm))
 
         if izinler:
-            elements.append(Paragraph("Ä°zin GeÃ§miÅŸi", self.heading_style))
-            izin_data = [['Ä°zin TÃ¼rÃ¼', 'BaÅŸlangÄ±Ã§', 'BitiÅŸ', 'GÃ¼n', 'Durum']]
+            elements.append(Paragraph("İzin Geçmişi", self.heading_style))
+            izin_data = [['İzin Türü', 'Başlangıç', 'Bitiş', 'Gün', 'Durum']]
             for iz in izinler:
                 izin_data.append([
                     str(iz.get('izin_adi', '-')),
@@ -171,15 +220,19 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                izin_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(izin_table)
             elements.append(Spacer(1, 0.5 * cm))
 
         if maaslar:
             elements.append(PageBreak())
-            elements.append(Paragraph("MaaÅŸ BordrolarÄ± (Son 6 Ay)", self.heading_style))
-            maas_data = [['DÃ¶nem', 'BrÃ¼t', 'Eklemeler', 'Kesintiler', 'Net', 'Durum']]
+            elements.append(Paragraph("Maaş Bordroları (Son 6 Ay)", self.heading_style))
+            maas_data = [['Dönem', 'Brüt', 'Eklemeler', 'Kesintiler', 'Net', 'Durum']]
             for m in maaslar:
-                durum = 'Ã–dendi' if m.get('odendi_mi') == 1 else 'Bekliyor'
+                durum = 'Ödendi' if m.get('odendi_mi') == 1 else 'Bekliyor'
                 maas_data.append([
                     f"{m.get('donem_ay')}/{m.get('donem_yil')}",
                     f"{m.get('brut_maas', 0)} TL",
@@ -198,6 +251,10 @@ class PDFGenerator:
                 ('GRID', (0, 0), (-1, -1), 1, colors.grey),
                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
             ]))
+            if self.font_name:
+                maas_table.setStyle(TableStyle([
+                    ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+                ]))
             elements.append(maas_table)
 
         doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
@@ -221,15 +278,15 @@ class PDFGenerator:
         elements.append(title)
         elements.append(Spacer(1, 0.5 * cm))
 
-        summary = Paragraph(f"<b>DÃ¶nem:</b> {tarih_baslangic} - {tarih_bitis}", self.styles['Normal'])
+        summary = Paragraph(f"<b>Dönem:</b> {tarih_baslangic} - {tarih_bitis}", self.styles['Normal'])
         elements.append(summary)
         elements.append(Spacer(1, 0.5 * cm))
 
         data = [['Tarih', 'Personel', 'Departman', 'Durum']]
 
         for d in devam_kayitlari:
-            durum_tr = {'Normal': 'âœ“ Var', 'Izinli': 'âš  Ä°zinli', 'Devamsiz': 'âœ— Yok'}.get(d.get('durum'),
-                                                                                                 d.get('durum'))
+            durum_tr = {'Normal': '✓ Var', 'Izinli': '⚠ İzinli', 'Devamsiz': '✗ Yok'}.get(d.get('durum'),
+                                                                                          d.get('durum'))
             data.append([
                 str(d.get('tarih', '-')),
                 f"{d.get('ad', '')} {d.get('soyad', '')}",
@@ -267,11 +324,11 @@ class PDFGenerator:
         elements = []
 
         filtre_text = f" ({filtre})" if filtre else ""
-        title = Paragraph(f"Ä°zin Raporu{filtre_text}", self.title_style)
+        title = Paragraph(f"İzin Raporu{filtre_text}", self.title_style)
         elements.append(title)
         elements.append(Spacer(1, 0.5 * cm))
 
-        data = [['Personel', 'Ä°zin TÃ¼rÃ¼', 'BaÅŸlangÄ±Ã§', 'BitiÅŸ', 'GÃ¼n SayÄ±sÄ±', 'Durum']]
+        data = [['Personel', 'İzin Türü', 'Başlangıç', 'Bitiş', 'Gün Sayısı', 'Durum']]
 
         for iz in izinler:
             data.append([
@@ -300,157 +357,7 @@ class PDFGenerator:
         self.buffer.seek(0)
         return self.buffer
 
-    def maas_bordrosu_pdf(self, bordro_data):
-        """
-        Profesyonel maaş bordrosu PDF'i oluşturur
-        bordro_data: {
-            'personel': {...},
-            'maas': {...},
-            'detaylar': [...]
-        }
-        """
-        doc = SimpleDocTemplate(
-            self.buffer,
-            pagesize=A4,
-            rightMargin=2 * cm,
-            leftMargin=2 * cm,
-            topMargin=3 * cm,
-            bottomMargin=2 * cm
-        )
-
-        elements = []
-
-        # Başlık
-        title = Paragraph("MAAŞ BORDROSU", self.title_style)
-        elements.append(title)
-        elements.append(Spacer(1, 0.3 * cm))
-
-        # Dönem bilgisi
-        donem_text = f"<b>Dönem:</b> {bordro_data['maas']['donem_ay']}/{bordro_data['maas']['donem_yil']}"
-        elements.append(Paragraph(donem_text, self.styles['Normal']))
-        elements.append(Spacer(1, 0.5 * cm))
-
-        # Personel Bilgileri
-        elements.append(Paragraph("Personel Bilgileri", self.heading_style))
-
-        personel_info = f"""
-        <b>Ad Soyad:</b> {bordro_data['personel']['ad']} {bordro_data['personel']['soyad']}<br/>
-        <b>TC Kimlik No:</b> {bordro_data['personel'].get('tc_kimlik_no', '-')}<br/>
-        <b>Departman:</b> {bordro_data['personel'].get('departman_adi', '-')}<br/>
-        <b>Pozisyon:</b> {bordro_data['personel'].get('pozisyon_adi', '-')}
-        """
-        elements.append(Paragraph(personel_info, self.styles['Normal']))
-        elements.append(Spacer(1, 0.8 * cm))
-
-        # Maaş Özeti
-        elements.append(Paragraph("Maaş Özeti", self.heading_style))
-
-        ozet_data = [
-            ['Açıklama', 'Tutar'],
-            ['Brüt Maaş', f"{bordro_data['maas']['brut_maas']:,.2f} TL"],
-            ['Toplam Eklemeler', f"+{bordro_data['maas']['toplam_ekleme']:,.2f} TL"],
-            ['Toplam Kesintiler', f"-{bordro_data['maas']['toplam_kesinti']:,.2f} TL"],
-        ]
-
-        ozet_table = Table(ozet_data, colWidths=[10 * cm, 6 * cm])
-        ozet_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 11),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
-        ]))
-        elements.append(ozet_table)
-        elements.append(Spacer(1, 0.5 * cm))
-
-        # Net Maaş (Vurgulu)
-        net_maas_data = [['NET MAAŞ (Ödenen)', f"{bordro_data['maas']['net_maas']:,.2f} TL"]]
-        net_table = Table(net_maas_data, colWidths=[10 * cm, 6 * cm])
-        net_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#198754')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 14),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 15),
-            ('TOPPADDING', (0, 0), (-1, 0), 15),
-        ]))
-        elements.append(net_table)
-        elements.append(Spacer(1, 1 * cm))
-
-        # Detaylı Hesaplama
-        if bordro_data.get('detaylar'):
-            elements.append(Paragraph("Detaylı Hesaplama", self.heading_style))
-
-            detay_data = [['Bileşen', 'Tip', 'Tutar']]
-
-            for detay in bordro_data['detaylar']:
-                tip_color = 'green' if detay['tip'] == 'Ekleme' else 'red'
-                tip_icon = '+' if detay['tip'] == 'Ekleme' else '-'
-
-                detay_data.append([
-                    detay['bilesen_adi'],
-                    detay['tip'],
-                    f"{tip_icon}{detay['tutar']:,.2f} TL"
-                ])
-
-            detay_table = Table(detay_data, colWidths=[8 * cm, 4 * cm, 4 * cm])
-            detay_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6c757d')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-                ('FONTSIZE', (0, 1), (-1, -1), 9),
-                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
-            ]))
-            elements.append(detay_table)
-            elements.append(Spacer(1, 1 * cm))
-
-        # Ödeme Durumu
-        odeme_durumu = 'ÖDENDİ' if bordro_data['maas'].get('odendi_mi') else 'ÖDEME BEKLENİYOR'
-        odeme_color = colors.HexColor('#198754') if bordro_data['maas'].get('odendi_mi') else colors.HexColor('#ffc107')
-
-        durum_text = f"<b>Durum:</b> {odeme_durumu}"
-        if bordro_data['maas'].get('odeme_tarihi'):
-            durum_text += f" | <b>Ödeme Tarihi:</b> {bordro_data['maas']['odeme_tarihi']}"
-
-        elements.append(Paragraph(durum_text, self.styles['Normal']))
-        elements.append(Spacer(1, 1.5 * cm))
-
-        # İmza Alanları
-        imza_data = [
-            ['Personel İmzası', 'Muhasebe İmzası', 'Yönetici İmzası'],
-            ['', '', ''],
-            ['___________________', '___________________', '___________________']
-        ]
-
-        imza_table = Table(imza_data, colWidths=[5.3 * cm, 5.3 * cm, 5.3 * cm])
-        imza_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TOPPADDING', (0, 1), (-1, 1), 30),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ]))
-        elements.append(imza_table)
-
-        doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
-
-        self.buffer.seek(0)
-        return self.buffer
-
-    def toplu_maas_bordrosu_pdf(self, bordrolar):
-        """
-        Birden fazla personelin bordrosunu tek PDF'de oluşturur
-        """
+    def payrolls_pdf(self, maaslar, yil=None, ay=None):
         doc = SimpleDocTemplate(
             self.buffer,
             pagesize=landscape(A4),
@@ -462,82 +369,62 @@ class PDFGenerator:
 
         elements = []
 
-        # Ana başlık
-        if bordrolar and len(bordrolar) > 0:
-            donem = f"{bordrolar[0]['donem_ay']}/{bordrolar[0]['donem_yil']}"
-            title = Paragraph(f"Maaş Bordroları Toplu Raporu - {donem}", self.title_style)
-        else:
-            title = Paragraph("Maaş Bordroları Toplu Raporu", self.title_style)
-
+        title_text = "Maaş Bordroları"
+        if yil and ay:
+            title_text += f" - {ay}/{yil}"
+        title = Paragraph(title_text, self.title_style)
         elements.append(title)
         elements.append(Spacer(1, 0.5 * cm))
+        data = [['Personel', 'Departman', 'Brüt', 'Eklemeler', 'Kesintiler', 'Net', 'Durum']]
 
-        summary = Paragraph(
-            f"<b>Toplam Bordro Sayısı:</b> {len(bordrolar)} | <b>Oluşturulma:</b> {datetime.date.today().strftime('%d/%m/%Y')}",
-            self.styles['Normal']
-        )
-        elements.append(summary)
-        elements.append(Spacer(1, 0.5 * cm))
-
-        # Tablo başlıkları
-        data = [['Personel', 'Departman', 'Brüt Maaş', 'Eklemeler', 'Kesintiler', 'Net Maaş', 'Durum']]
-
-        toplam_brut = 0
-        toplam_ekleme = 0
-        toplam_kesinti = 0
-        toplam_net = 0
-
-        for bordro in bordrolar:
-            durum = '✓ Ödendi' if bordro.get('odendi_mi') else '⏳ Bekliyor'
-
+        for m in maaslar:
+            durum = 'Ödendi' if m.get('odendi_mi') else 'Bekliyor'
             data.append([
-                f"{bordro.get('ad', '')} {bordro.get('soyad', '')}",
-                str(bordro.get('departman_adi', '-')),
-                f"{bordro.get('brut_maas', 0):,.2f} TL",
-                f"+{bordro.get('toplam_ekleme', 0):,.2f} TL",
-                f"-{bordro.get('toplam_kesinti', 0):,.2f} TL",
-                f"{bordro.get('net_maas', 0):,.2f} TL",
-                durum
+                f"{m.get('ad','')} {m.get('soyad','')}",
+                m.get('departman_adi', '-'),
+                f"{m.get('brut_maas', 0):,.2f} ₺",
+                f"+{m.get('toplam_ekleme', 0):,.2f} ₺",
+                f"-{m.get('toplam_kesinti', 0):,.2f} ₺",
+                f"{m.get('net_maas', 0):,.2f} ₺",
+                durum,
             ])
 
-            toplam_brut += bordro.get('brut_maas', 0)
-            toplam_ekleme += bordro.get('toplam_ekleme', 0)
-            toplam_kesinti += bordro.get('toplam_kesinti', 0)
-            toplam_net += bordro.get('net_maas', 0)
-
-        # Toplam satırı
-        data.append([
-            'TOPLAM',
-            '',
-            f"{toplam_brut:,.2f} TL",
-            f"+{toplam_ekleme:,.2f} TL",
-            f"-{toplam_kesinti:,.2f} TL",
-            f"{toplam_net:,.2f} TL",
-            ''
-        ])
-
-        table = Table(data, colWidths=[5 * cm, 4 * cm, 3.5 * cm, 3.5 * cm, 3.5 * cm, 3.5 * cm, 3 * cm])
+        table = Table(data, colWidths=[6 * cm, 4 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm])
         table.setStyle(TableStyle([
-            # Başlık stili
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0d6efd')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('ALIGN', (2, 0), (5, -1), 'RIGHT'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            # İçerik stili
             ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-            ('FONTSIZE', (0, 1), (-1, -2), 9),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.lightgrey]),
-            # Toplam satırı stili
-            ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#198754')),
-            ('TEXTCOLOR', (0, -1), (-1, -1), colors.whitesmoke),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, -1), (-1, -1), 11),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
         ]))
 
+        if self.font_name:
+            table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), self.font_name)
+            ]))
+
         elements.append(table)
+        for m in maaslar:
+            elements.append(Spacer(1, 0.3 * cm))
+            elements.append(Paragraph(f"Detaylar: {m.get('ad','')} {m.get('soyad','')} - {m.get('donem_ay')}/{m.get('donem_yil')}", self.heading_style))
+            detay_data = [['Bileşen', 'Tutar']]
+            for d in m.get('detaylar', []):
+                tut = d.get('tutar', 0) or 0
+                prefix = '+' if (d.get('tip') == 'ekleme') else '-'
+                detay_data.append([d.get('bilesen_adi', ''), f"{prefix}{float(tut):,.2f} ₺"])
+
+            dt = Table(detay_data, colWidths=[10 * cm, 4 * cm])
+            dt.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#6c757d')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey])
+            ]))
+            if self.font_name:
+                dt.setStyle(TableStyle([('FONTNAME', (0, 0), (-1, -1), self.font_name)]))
+            elements.append(dt)
 
         doc.build(elements, onFirstPage=self._header_footer, onLaterPages=self._header_footer)
 

@@ -11,6 +11,7 @@ import Leaves from './pages/Leaves'
 import Salary from './pages/Salary'
 import Settings from './pages/Settings'
 import ChangePassword from './pages/ChangePassword'
+import Archive from './pages/Archive'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth()
@@ -78,6 +79,7 @@ function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="salary" element={<Salary />} />
+          <Route path="archive" element={<Archive />} />
           <Route path="settings/*" element={<Settings />} />
         </Route>
 
@@ -97,8 +99,6 @@ function App() {
         </Route>
 
         <Route path="/" element={<RoleRedirect />} />
-
-        {/* change-password should render without the main Layout/sidebar */}
         <Route
           path="/change-password"
           element={

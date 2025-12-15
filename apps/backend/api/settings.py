@@ -116,8 +116,7 @@ def positions_list():
             SELECT 
                 p.pozisyon_id as id,
                 p.pozisyon_adi as ad,
-                p.taban_maas as min_maas,
-                p.taban_maas as max_maas,
+                p.taban_maas as taban_maas,
                 d.departman_id,
                 d.departman_adi
             FROM Pozisyon p
@@ -129,8 +128,7 @@ def positions_list():
         pozisyonlar = [{
             'id': row['id'],
             'ad': row['ad'],
-            'min_maas': row['min_maas'],
-            'max_maas': row['max_maas'],
+            'taban_maas': row.get('taban_maas', 0),
             'departman_id': row['departman_id']
         } for row in rows]
         
@@ -149,7 +147,7 @@ def position_add():
     
     pozisyon_adi = data.get('ad', '').strip()
     departman_id = data.get('departman_id')
-    taban_maas = data.get('min_maas') or data.get('max_maas') or 0
+    taban_maas = data.get('taban_maas') or 0
 
     if not pozisyon_adi:
         return jsonify({'error': 'Pozisyon adı gereklidir'}), 400
@@ -178,7 +176,7 @@ def position_edit(pos_id):
     
     pozisyon_adi = data.get('ad', '').strip()
     departman_id = data.get('departman_id')
-    taban_maas = data.get('min_maas') or data.get('max_maas') or 0
+    taban_maas = data.get('taban_maas') or 0
 
     if not pozisyon_adi:
         return jsonify({'error': 'Pozisyon adı gereklidir'}), 400

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Check, X, Clock, Umbrella, Filter } from 'lucide-react'
 import api from '../lib/api'
@@ -12,6 +12,12 @@ export default function Leaves() {
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<FilterType>('tumunu')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [formPersonelId, setFormPersonelId] = useState<string>('')
+  const [formIzinTuruId, setFormIzinTuruId] = useState<string>('')
+  const [formBaslangic, setFormBaslangic] = useState<string>('')
+  const [formBitis, setFormBitis] = useState<string>('')
+  const [formGunSayisi, setFormGunSayisi] = useState<number | ''>('')
+  const [formUcretli, setFormUcretli] = useState<boolean | null>(null)
 
   const { data, isLoading } = useQuery<{
     izinler: Leave[]
@@ -59,10 +65,17 @@ export default function Leaves() {
     },
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (id: number) => api.post(`/leaves/${id}/cancel`),
+    onSuccess: () => {
+      toast.success('İzin talebi iptal edildi')
+      queryClient.invalidateQueries({ queryKey: ['leaves'] })
+    },
+  })
+
   const addMutation = useMutation({
-    mutationFn: (formData: FormData) => {
-      const data = Object.fromEntries(formData)
-      return api.post('/leaves', data)
+    mutationFn: (payload: any) => {
+      return api.post('/leaves', payload)
     },
     onSuccess: () => {
       toast.success('İzin talebi oluşturuldu')
@@ -72,6 +85,27 @@ export default function Leaves() {
   })
 
   const leaves = data?.izinler || []
+  const selectedLeaveType = leaveTypesQuery.data?.find((t: any) => String(t.izin_turu_id) === String(formIzinTuruId))
+  const computeUsedDays = () => {
+    if (!formBaslangic || !selectedLeaveType) return 0
+    const year = new Date(formBaslangic).getFullYear()
+    const personId = formPersonelId || String(user?.personel_id || '')
+    const used = leaves
+      .filter((l: any) => String(l.personel_id) === String(personId))
+      .filter((l: any) => String(l.izin_turu_id) === String(selectedLeaveType.izin_turu_id))
+      .filter((l: any) => l.onay_durumu !== 'Reddedildi')
+      .reduce((acc: number, cur: any) => {
+        const s = new Date(cur.baslangic_tarihi).getFullYear()
+        if (s === year) return acc + (Number(cur.gun_sayisi) || 0)
+        return acc
+      }, 0)
+    return used
+  }
+
+  useEffect(() => {
+    if (selectedLeaveType) setFormUcretli(Boolean(selectedLeaveType.ucretli_mi))
+    else setFormUcretli(null)
+  }, [selectedLeaveType])
 
   if (isLoading) {
     return (
@@ -83,7 +117,6 @@ export default function Leaves() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">İzin Yönetimi</h1>
@@ -93,7 +126,15 @@ export default function Leaves() {
         </div>
         {user?.rol !== 'admin' && (
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setFormPersonelId(String(user?.personel_id || ''))
+              setFormIzinTuruId('')
+              setFormBaslangic('')
+              setFormBitis('')
+              setFormGunSayisi('')
+                setFormUcretli(null)
+              setShowAddModal(true)
+            }}
             className="btn btn-primary"
           >
             <Plus size={18} />
@@ -101,8 +142,6 @@ export default function Leaves() {
           </button>
         )}
       </div>
-
-      {/* Filter Buttons */}
       <div className="card p-4">
         <div className="flex flex-wrap gap-2">
           <FilterButton
@@ -134,8 +173,6 @@ export default function Leaves() {
           />
         </div>
       </div>
-
-      {/* Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -198,26 +235,36 @@ export default function Leaves() {
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex justify-end gap-2">
-                      {leave.onay_durumu === 'Beklemede' && (
-                        <>
-                          <button
-                            onClick={() => approveMutation.mutate(leave.izin_kayit_id)}
-                            className="btn btn-success text-sm py-1.5 px-3"
-                            disabled={approveMutation.isPending}
-                          >
-                            <Check size={14} />
-                            Onayla
-                          </button>
-                          <button
-                            onClick={() => rejectMutation.mutate(leave.izin_kayit_id)}
-                            className="btn btn-danger text-sm py-1.5 px-3"
-                            disabled={rejectMutation.isPending}
-                          >
-                            <X size={14} />
-                            Reddet
-                          </button>
-                        </>
-                      )}
+                              {user?.rol === 'admin' && leave.onay_durumu === 'Beklemede' && (
+                            <>
+                              <button
+                                onClick={() => approveMutation.mutate(leave.izin_kayit_id)}
+                                className="btn btn-success text-sm py-1.5 px-3"
+                                disabled={approveMutation.isPending}
+                              >
+                                <Check size={14} />
+                                Onayla
+                              </button>
+                              <button
+                                onClick={() => rejectMutation.mutate(leave.izin_kayit_id)}
+                                className="btn btn-danger text-sm py-1.5 px-3"
+                                disabled={rejectMutation.isPending}
+                              >
+                                <X size={14} />
+                                Reddet
+                              </button>
+                            </>
+                          )}
+                              {(leave.onay_durumu === 'Beklemede' && (user?.rol === 'admin' || String(leave.personel_id) === String(user?.personel_id))) && (
+                                <button
+                                  type="button"
+                                  onClick={() => cancelMutation.mutate(leave.izin_kayit_id)}
+                                  className="btn btn-secondary text-sm py-1.5 px-3"
+                                  disabled={cancelMutation.isPending}
+                                >
+                                  İptal Et
+                                </button>
+                              )}
                       {leave.onay_durumu !== 'Beklemede' && (
                         <span className="text-sm text-slate-400">İşlem Tamamlandı</span>
                       )}
@@ -244,8 +291,6 @@ export default function Leaves() {
           </div>
         )}
       </div>
-
-      {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
@@ -263,14 +308,30 @@ export default function Leaves() {
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                addMutation.mutate(new FormData(e.currentTarget))
+                const payload: any = {
+                  personel_id: formPersonelId || user?.personel_id,
+                  izin_turu_id: formIzinTuruId,
+                  baslangic_tarihi: formBaslangic,
+                  bitis_tarihi: formBitis,
+                }
+                if (formUcretli === false) {
+                  const unpaid = leaveTypesQuery.data?.find((t: any) => t.ucretli_mi === false)
+                  if (unpaid) {
+                    payload.izin_turu_id = unpaid.izin_turu_id
+                  } else {
+                    toast.error('Ücretsiz izin türü bulunamadı. Lütfen yönetici ile iletişime geçin.')
+                    return
+                  }
+                }
+                if (formGunSayisi !== '') payload.gun_sayisi = formGunSayisi
+                addMutation.mutate(payload)
               }}
               className="p-6 space-y-4"
             >
               {user?.rol === 'admin' ? (
                 <div>
                   <label className="label">Personel</label>
-                  <select name="personel_id" className="input" required>
+                  <select name="personel_id" className="input" required value={formPersonelId} onChange={(e) => setFormPersonelId(e.target.value)}>
                     <option value="">Seçiniz...</option>
                     {employeesQuery.data?.map((p: any) => (
                       <option key={p.personel_id} value={p.personel_id}>
@@ -280,11 +341,11 @@ export default function Leaves() {
                   </select>
                 </div>
               ) : (
-                <input type="hidden" name="personel_id" value={user?.personel_id || ''} />
+                <input type="hidden" name="personel_id" value={String(user?.personel_id || '')} />
               )}
               <div>
                 <label className="label">İzin Türü</label>
-                <select name="izin_turu_id" className="input" required>
+                <select name="izin_turu_id" className="input" required value={formIzinTuruId} onChange={(e) => setFormIzinTuruId(e.target.value)}>
                   <option value="">Seçiniz...</option>
                   {leaveTypesQuery.data?.map((t: any) => (
                     <option key={t.izin_turu_id} value={t.izin_turu_id}>
@@ -293,6 +354,42 @@ export default function Leaves() {
                   ))}
                 </select>
               </div>
+              {selectedLeaveType && selectedLeaveType.ucretli_mi && (
+                <div className="mt-2 p-3 bg-slate-50 rounded-md">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm text-slate-600">Bu izin türü ücretli. Yıllık hak:</div>
+                      <div className="font-medium">{selectedLeaveType.yillik_hak_gun} Gün</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-slate-600">Kullanılan (yıl):</div>
+                      <div className="font-medium">{computeUsedDays()} Gün</div>
+                      <div className="text-sm text-slate-600 mt-1">Kalan:</div>
+                      <div className="font-medium">{Math.max(0, (selectedLeaveType.yillik_hak_gun || 0) - computeUsedDays())} Gün</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3">
+                    <label className="label mb-0">İzin Tipi</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setFormUcretli(true)}
+                        className={`px-3 py-1 rounded-lg text-sm ${formUcretli !== false ? 'bg-primary-600 text-white' : 'bg-white border'}`}
+                      >
+                        Ücretli
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormUcretli(false)}
+                        className={`px-3 py-1 rounded-lg text-sm ${formUcretli === false ? 'bg-amber-500 text-white' : 'bg-white border'}`}
+                      >
+                        Ücretsiz
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Başlangıç</label>
@@ -301,6 +398,16 @@ export default function Leaves() {
                     name="baslangic_tarihi"
                     className="input"
                     required
+                    value={formBaslangic}
+                    onChange={(e) => {
+                      setFormBaslangic(e.target.value)
+                      if (formBitis) {
+                        const s = new Date(e.target.value)
+                        const b = new Date(formBitis)
+                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000*60*60*24)) + 1)
+                        setFormGunSayisi(delta)
+                      }
+                    }}
                   />
                 </div>
                 <div>
@@ -310,6 +417,16 @@ export default function Leaves() {
                     name="bitis_tarihi"
                     className="input"
                     required
+                    value={formBitis}
+                    onChange={(e) => {
+                      setFormBitis(e.target.value)
+                      if (formBaslangic) {
+                        const s = new Date(formBaslangic)
+                        const b = new Date(e.target.value)
+                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000*60*60*24)) + 1)
+                        setFormGunSayisi(delta)
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -320,6 +437,8 @@ export default function Leaves() {
                   name="gun_sayisi"
                   className="input"
                   placeholder="Otomatik hesaplanacaksa boş bırakın"
+                  value={formGunSayisi}
+                  onChange={(e) => setFormGunSayisi(e.target.value === '' ? '' : Number(e.target.value))}
                 />
               </div>
               <div className="flex gap-3 pt-4">

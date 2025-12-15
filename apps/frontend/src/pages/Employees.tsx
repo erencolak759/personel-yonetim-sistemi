@@ -17,19 +17,37 @@ import type { Employee, Department, Position } from '../types'
 
 export default function Employees() {
   const queryClient = useQueryClient()
+  const [archivedView, setArchivedView] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [editModal, setEditModal] = useState<Employee | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState<Employee | null>(null)
+
+  const downloadEmployeeListPdf = async () => {
+    try {
+      const res = await api.get(`/employees/report?archived=${archivedView ? 1 : 0}`, { responseType: 'blob' })
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'personel_listesi.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'PDF indirilemedi')
+    }
+  }
 
   const { data, isLoading } = useQuery<{
     personeller: Employee[]
     departmanlar: Department[]
     pozisyonlar: Position[]
   }>({
-    queryKey: ['employees'],
+    queryKey: ['employees', archivedView],
     queryFn: async () => {
-      const response = await api.get('/employees')
+      const response = await api.get(`/employees?archived=${archivedView ? 1 : 0}`)
       return { personeller: response.data, departmanlar: [], pozisyonlar: [] }
     },
   })
@@ -38,7 +56,7 @@ export default function Employees() {
     mutationFn: (id: number) => api.delete(`/employees/${id}`),
     onSuccess: () => {
       toast.success('Personel başarıyla silindi')
-      queryClient.invalidateQueries({ queryKey: ['employees'] })
+      queryClient.invalidateQueries({ queryKey: ['employees', archivedView] })
       setDeleteModal(null)
     },
   })
@@ -65,7 +83,7 @@ export default function Employees() {
         }
 
         toast.success('Personel bilgileri güncellendi')
-        queryClient.invalidateQueries({ queryKey: ['employees'] })
+        queryClient.invalidateQueries({ queryKey: ['employees', archivedView] })
         setEditModal(null)
       } catch (err: any) {
         toast.error(err?.response?.data?.error || 'Güncelleme sonrası işlem hatası')
@@ -97,22 +115,28 @@ export default function Employees() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Personel Listesi</h1>
           <p className="text-slate-500 mt-1">
-            Toplam {employees.length} kayıtlı çalışan
+            Toplam {employees.length} kayıtlı çalışan {archivedView ? '(Arşiv)' : ''}
           </p>
         </div>
-        <div className="flex gap-2">
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); toast('PDF export not available') }}
-            className="btn btn-outline text-slate-700"
-          >
+        <div className="flex gap-2 items-center">
+          <div className="inline-flex rounded-lg overflow-hidden border bg-white">
+            <button onClick={() => setArchivedView(false)} className={`px-3 py-2 text-sm ${!archivedView ? 'bg-primary-600 text-white' : 'text-slate-600'}`}>
+              Normal
+            </button>
+            <button onClick={() => setArchivedView(true)} className={`px-3 py-2 text-sm ${archivedView ? 'bg-amber-500 text-white' : 'text-slate-600'}`}>
+              Arşiv
+            </button>
+          </div>
+          <div className="flex gap-2">
+          <button onClick={downloadEmployeeListPdf} className="btn btn-outline">
             <FileDown size={18} />
             PDF İndir
-          </a>
+          </button>
           <Link to="/admin/employees/add" className="btn btn-primary">
             <Plus size={18} />
             Yeni Personel
           </Link>
+          </div>
         </div>
       </div>
 
@@ -205,7 +229,6 @@ export default function Employees() {
                           setModalLoading(true)
                           try {
                             const res = await api.get(`/employees/${employee.personel_id}`)
-                            // endpoint returns { personel, pozisyon_gecmisi, izinler }
                             const payload = res.data?.personel ?? res.data
                             setEditModal(payload)
                           } catch (err: any) {

@@ -12,8 +12,7 @@ export default function Positions() {
   const [formData, setFormData] = useState({
     ad: '',
     departman_id: '',
-    min_maas: '',
-    max_maas: ''
+    taban_maas: ''
   });
 
   const { data: positions = [], isLoading } = useQuery<Position[]>({
@@ -74,12 +73,11 @@ export default function Positions() {
       setFormData({
         ad: position.ad,
         departman_id: position.departman_id?.toString() || '',
-        min_maas: position.min_maas?.toString() || '',
-        max_maas: position.max_maas?.toString() || ''
+        taban_maas: (position.taban_maas || '').toString()
       });
     } else {
       setEditingPosition(null);
-      setFormData({ ad: '', departman_id: '', min_maas: '', max_maas: '' });
+      setFormData({ ad: '', departman_id: '', taban_maas: '' });
     }
     setIsModalOpen(true);
   };
@@ -87,7 +85,7 @@ export default function Positions() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingPosition(null);
-    setFormData({ ad: '', departman_id: '', min_maas: '', max_maas: '' });
+    setFormData({ ad: '', departman_id: '', taban_maas: '' });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,14 +103,9 @@ export default function Positions() {
     }
   };
 
-  const getDepartmentName = (departmanId?: number) => {
-    if (!departmanId) return '-';
-    const dept = departments.find(d => d.id === departmanId);
-    return dept?.ad || '-';
-  };
 
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return '-';
+  const formatCurrency = (amount?: number | null) => {
+    if (amount === null || amount === undefined) return '-';
     return new Intl.NumberFormat('tr-TR', {
       style: 'currency',
       currency: 'TRY'
@@ -154,10 +147,7 @@ export default function Positions() {
                 Departman
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Min. Maaş
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Max. Maaş
+                Brüt Maaş
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 İşlemler
@@ -172,7 +162,6 @@ export default function Positions() {
                 </td>
               </tr>
             ) : (
-              // Group positions by department for clearer view
               departments.map((dept) => {
                 const deptPositions = positions.filter((p) => p.departman_id === dept.id)
                 if (deptPositions.length === 0) return null
@@ -197,10 +186,7 @@ export default function Positions() {
                           {dept.ad}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                          {formatCurrency(position.min_maas)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                          {formatCurrency(position.max_maas)}
+                          {formatCurrency(position.taban_maas)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -226,7 +212,6 @@ export default function Positions() {
                 )
               })
             )}
-            {/* Unassigned positions (no department) */}
             {positions.some((p) => !p.departman_id) && (
               <>
                 <tr className="bg-gray-100">
@@ -245,8 +230,7 @@ export default function Positions() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">-</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">{formatCurrency(position.min_maas)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">{formatCurrency(position.max_maas)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">{formatCurrency(position.taban_maas)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -272,8 +256,6 @@ export default function Positions() {
           </tbody>
         </table>
       </div>
-
-      {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
@@ -319,33 +301,18 @@ export default function Positions() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Min. Maaş (₺)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.min_maas}
-                    onChange={(e) => setFormData({ ...formData, min_maas: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Max. Maaş (₺)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.max_maas}
-                    onChange={(e) => setFormData({ ...formData, max_maas: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Brüt Maaş (₺)
+                </label>
+                <input
+                  type="number"
+                  value={formData.taban_maas}
+                  onChange={(e) => setFormData({ ...formData, taban_maas: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="0"
+                  min="0"
+                />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
