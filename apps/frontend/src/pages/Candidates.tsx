@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/api'
 import type { Candidate, Position } from '../types'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 
 interface CandidateForm {
   ad: string
@@ -70,6 +71,37 @@ export default function Candidates() {
     },
   })
 
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.post(`/candidates/${id}/approve`)
+      return res.data
+    },
+    onSuccess: (data) => {
+      toast.success('Aday onaylandı, kullanıcı oluşturuldu')
+      if (data?.username && data?.password) {
+        toast.success(`Kullanıcı: ${data.username} / Şifre: ${data.password}`)
+      }
+      queryClient.invalidateQueries({ queryKey: ['candidates'] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error || 'Onay başarısız')
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await api.post(`/candidates/${id}/reject`)
+      return res.data
+    },
+    onSuccess: () => {
+      toast.success('Aday reddedildi')
+      queryClient.invalidateQueries({ queryKey: ['candidates'] })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error || 'Red işlemi başarısız')
+    },
+  })
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
@@ -82,10 +114,12 @@ export default function Candidates() {
   }
 
   const toplamAday = candidates?.length || 0
-  const durumGruplari = candidates?.reduce<Record<string, number>>((acc, c) => {
+  const durumGruplari = candidates
+    ?.filter((c) => c.durum !== 'Kabul' && c.durum !== 'Red')
+    .reduce<Record<string, number>>((acc, c) => {
     acc[c.durum] = (acc[c.durum] || 0) + 1
     return acc
-  }, {}) || {}
+    }, {}) || {}
 
   return (
     <div className="space-y-6">
@@ -129,11 +163,13 @@ export default function Candidates() {
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
             </div>
-          ) : !candidates || candidates.length === 0 ? (
+          ) : !candidates || candidates.filter((c) => c.durum !== 'Kabul' && c.durum !== 'Red').length === 0 ? (
             <p className="text-slate-500 text-sm text-center py-6">Henüz aday kaydı bulunmuyor.</p>
           ) : (
             <div className="space-y-3">
-              {candidates.map((c) => (
+              {candidates
+                .filter((c) => c.durum !== 'Kabul' && c.durum !== 'Red')
+                .map((c) => (
                 <div
                   key={c.aday_id}
                   className="border border-slate-200 rounded-xl p-4 bg-white flex flex-col sm:flex-row sm:items-center gap-3"
@@ -156,6 +192,22 @@ export default function Candidates() {
                     <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">
                       {c.durum}
                     </span>
+                    <div className="flex gap-2 mt-2 justify-end">
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => approveMutation.mutate(c.aday_id)}
+                        disabled={approveMutation.isPending}
+                      >
+                        Onayla
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => rejectMutation.mutate(c.aday_id)}
+                        disabled={rejectMutation.isPending}
+                      >
+                        Red
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
