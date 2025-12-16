@@ -136,12 +136,13 @@ def dashboard():
         devamsizlik_data = [{'ay': row['ay'], 'sayi': row['sayi']} for row in cursor.fetchall()]
 
         # İzin istatistikleri: admin için tüm sistem, çalışan için sadece kendisi
+        # Not: Önceden sadece son 3 aylık izinler hesaba katılıyordu.
+        # Kullanıcıların dashboard'da tüm izin durumlarını görebilmesi için tarih filtresi kaldırıldı.
         if user_role == 'admin' or not current_personel_id:
             cursor.execute(
                 """
                 SELECT onay_durumu, COUNT(*) as sayi
                 FROM Izin_Kayit
-                WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
                 GROUP BY onay_durumu
                 """
             )
@@ -150,8 +151,7 @@ def dashboard():
                 """
                 SELECT onay_durumu, COUNT(*) as sayi
                 FROM Izin_Kayit
-                WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-                  AND personel_id = %s
+                WHERE personel_id = %s
                 GROUP BY onay_durumu
                 """,
                 (current_personel_id,),

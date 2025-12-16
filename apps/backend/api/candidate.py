@@ -173,7 +173,12 @@ def _generate_password(length: int = 10):
 @candidate_bp.route("/candidates/<int:aday_id>/approve", methods=["POST"])
 @admin_required
 def approve_candidate(aday_id: int):
-    """Adayı onaylar, durumunu 'Kabul' yapar ve kullanıcı hesabı oluşturur."""
+    """Adayı onaylar, durumunu 'Kabul' yapar ve kullanıcı hesabı oluşturur.
+
+    Ek olarak:
+    - Adayın seçtiği pozisyonun bağlı olduğu departmanı otomatik bulur
+    - Oluşturulan personel kaydında `departman_id` alanını bu değer ile doldurur
+    """
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -190,6 +195,18 @@ def approve_candidate(aday_id: int):
             return jsonify({"error": "Aday bulunamadı"}), 404
         if aday.get("durum") == "Kabul":
             return jsonify({"error": "Bu aday zaten onaylanmış"}), 400
+
+        # Adayın pozisyonuna bağlı departmanı bul
+        pozisyon_id = aday.get("pozisyon_id")
+        departman_id = None
+        if pozisyon_id:
+            cursor.execute(
+                "SELECT departman_id FROM Pozisyon WHERE pozisyon_id = %s",
+                (pozisyon_id,),
+            )
+            pozisyon_row = cursor.fetchone()
+            if pozisyon_row:
+                departman_id = pozisyon_row.get("departman_id")
 
         # Durumu güncelle
         cursor.execute(
@@ -215,13 +232,12 @@ def approve_candidate(aday_id: int):
                 aday.get("email"),
                 None,
                 ise_giris_tarihi,
-                None,
+                departman_id,
             ),
         )
         personel_id = cursor.lastrowid
 
         # Pozisyon eşlemesi
-        pozisyon_id = aday.get("pozisyon_id")
         if pozisyon_id:
             cursor.execute(
                 """
