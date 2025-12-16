@@ -15,6 +15,7 @@ import Settings from './pages/Settings'
 import ChangePassword from './pages/ChangePassword'
 import UserHome from './pages/UserDashboard'
 import UserPayroll from './pages/UserPayroll'
+import Users from './pages/Users'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth()
@@ -79,6 +80,7 @@ function App() {
           <Route path="employees" element={<Employees />} />
           <Route path="employees/add" element={<AddEmployee />} />
           <Route path="employees/:id" element={<EmployeeDetail />} />
+          <Route path="users" element={<Users />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="salary" element={<Salary />} />

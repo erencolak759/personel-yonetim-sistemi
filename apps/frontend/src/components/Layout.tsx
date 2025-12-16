@@ -13,16 +13,17 @@ import {
   Menu,
   X,
   Archive,
+  Shield,
 } from 'lucide-react'
 import { useState } from 'react'
 
 const adminNavigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Personel', href: '/admin/employees', icon: Users },
+  { name: 'Kullanıcılar', href: '/admin/users', icon: Shield },
   { name: 'Yoklama', href: '/admin/attendance', icon: Calendar },
   { name: 'İzinler', href: '/admin/leaves', icon: Umbrella },
   { name: 'Maaşlar', href: '/admin/salary', icon: Wallet },
-  { name: 'Arşiv', href: '/admin/archive', icon: Archive },
   { name: 'Duyurular', href: '/admin/announcements', icon: Megaphone },
   { name: 'Adaylar', href: '/admin/candidates', icon: UserPlus },
   { name: 'Ayarlar', href: '/admin/settings', icon: Settings },
