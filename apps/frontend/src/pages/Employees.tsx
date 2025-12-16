@@ -270,7 +270,7 @@ export default function Employees() {
       
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900">
                 Personel Düzenle
@@ -301,7 +301,7 @@ export default function Employees() {
 
                   editMutation.mutate({ personelData, account })
                 }}
-              className="p-6 space-y-4"
+              className="p-6 space-y-4 overflow-y-auto"
             >
               <div>
                 <label className="label">Ad</label>

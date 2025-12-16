@@ -219,28 +219,55 @@ def change_password():
 @auth_bp.route("/users", methods=["GET"])
 @admin_required
 def get_users():
+    """
+    Tüm personelleri ve varsa ilişkili kullanıcı hesaplarını döner.
+    Kullanici kaydı olmayan personeller de listelenir (kullanici_id NULL).
+    """
     conn = get_connection()
     cursor = conn.cursor()
     
+    only_personnel = request.args.get('only_personnel', '0')
     try:
-        cursor.execute("""
-            SELECT k.kullanici_id, k.kullanici_adi, k.email, k.rol, k.aktif_mi,
-                   k.son_giris, p.ad, p.soyad
-            FROM Kullanici k
-            LEFT JOIN Personel p ON k.personel_id = p.personel_id
-            ORDER BY k.kullanici_id DESC
-        """)
+        sql = """
+            SELECT 
+                p.personel_id,
+                p.ad,
+                p.soyad,
+                p.email AS personel_email,
+                p.telefon AS personel_telefon,
+                d.departman_adi,
+                k.kullanici_id,
+                k.kullanici_adi,
+                k.email,
+                k.rol,
+                k.aktif_mi,
+                k.son_giris
+            FROM Personel p
+            LEFT JOIN Kullanici k ON k.personel_id = p.personel_id
+            LEFT JOIN Departman d ON p.departman_id = d.departman_id
+        """
+        params = []
+        # only_personnel param'ı korunuyor; kullanıcı dışı kayıtları hariç tutmak istersen ileride kullanılır.
+        if str(only_personnel) in ['1', 'true', 'True']:
+            sql += " WHERE p.personel_id IS NOT NULL"
+        sql += " ORDER BY p.personel_id DESC"
+
+        cursor.execute(sql, params)
         rows = cursor.fetchall()
         
         users = [{
-            'kullanici_id': row['kullanici_id'],
-            'kullanici_adi': row['kullanici_adi'],
-            'email': row['email'],
-            'rol': row['rol'],
-            'aktif_mi': row['aktif_mi'],
-            'son_giris': row['son_giris'],
+            'personel_id': row['personel_id'],
             'ad': row['ad'],
-            'soyad': row['soyad']
+            'soyad': row['soyad'],
+            'personel_email': row.get('personel_email'),
+            'personel_telefon': row.get('personel_telefon'),
+            'departman_adi': row.get('departman_adi'),
+            'kullanici_id': row.get('kullanici_id'),
+            'kullanici_adi': row.get('kullanici_adi'),
+            'email': row.get('email'),
+            'rol': row.get('rol'),
+            'aktif_mi': row.get('aktif_mi'),
+            'son_giris': row.get('son_giris'),
         } for row in rows]
         
         return jsonify(users)
@@ -307,9 +334,11 @@ def update_user(user_id):
             updates.append("aktif_mi = %s")
             params.append(1 if data['aktif_mi'] else 0)
         
+        plain_password = None
         if 'sifre' in data and data['sifre']:
+            plain_password = data['sifre']
             updates.append("sifre_hash = %s")
-            params.append(generate_password_hash(data['sifre']))
+            params.append(generate_password_hash(plain_password))
         
         if not updates:
             return jsonify({'error': 'Güncellenecek alan bulunamadı'}), 400
@@ -319,7 +348,10 @@ def update_user(user_id):
         cursor.execute(sql, params)
         conn.commit()
         
-        return jsonify({'message': 'Kullanıcı güncellendi'})
+        resp = {'message': 'Kullanıcı güncellendi'}
+        if plain_password:
+            resp['password'] = plain_password
+        return jsonify(resp)
     finally:
         conn.close()
 
