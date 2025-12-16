@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Users, Umbrella, Wallet, Clock, ArrowUp, ArrowDown, Megaphone, UserPlus } from 'lucide-react'
+import { Chart } from 'react-google-charts'
 import api from '../lib/api'
 import type { DashboardStats } from '../types'
 
@@ -7,7 +8,9 @@ interface DashboardData {
   stats: DashboardStats
   departman_data: { departman_adi: string; sayi: number }[]
   devamsizlik_data: { ay: string; sayi: number }[]
+  ise_alim_aylik: { ay: string; sayi: number }[]
   izin_stats: { onay_durumu: string; sayi: number }[]
+  izin_turu_gun: { izin_adi: string; toplam_gun: number }[]
   maas_dept_data: { departman_adi: string; ort_maas: number }[]
   duyurular: { duyuru_id: number; baslik: string; icerik: string; yayin_tarihi: string | null; oncelik: string }[]
   adaylar: { aday_id: number; ad: string; soyad: string; basvuru_tarihi: string | null; durum: string; pozisyon_adi: string }[]
@@ -38,7 +41,11 @@ export default function Dashboard() {
       return { onay_durumu: key, sayi: found?.sayi || 0 }
     })
 
+  const iseAlimSerisi = data?.ise_alim_aylik || []
+  const izinTuruSerisi = data?.izin_turu_gun || []
+
   const izinToplam = izinStatsNormalized.reduce((acc, i) => acc + (i.sayi || 0), 0)
+  const izinTuruToplamGun = izinTuruSerisi.reduce((acc, i) => acc + (i.toplam_gun || 0), 0)
 
   return (
     <div className="space-y-6">
@@ -164,102 +171,89 @@ export default function Dashboard() {
 
       <div className="card p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
-          Departman Bazlı Ortalama Maaş
+          Son 10 Yıl Yeni İşe Alımlar
         </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">
-                  Departman
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-slate-600">
-                  Ortalama Maaş
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.maas_dept_data?.map((dept) => (
-                <tr key={dept.departman_adi} className="border-b border-slate-100">
-                  <td className="py-3 px-4 text-sm text-slate-900">
-                    {dept.departman_adi}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-right font-medium text-emerald-600">
-                    ₺{(dept.ort_maas !== undefined && dept.ort_maas !== null) ? Number(dept.ort_maas).toLocaleString('tr-TR') : '-'}
-                  </td>
-                </tr>
-              ))}
-              {(!data?.maas_dept_data || data.maas_dept_data.length === 0) && (
-                <tr>
-                  <td colSpan={2} className="py-8 text-center text-slate-500 text-sm">
-                    Henüz veri bulunmuyor
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {iseAlimSerisi.length > 0 ? (
+          <Chart
+            chartType="ColumnChart"
+            width="100%"
+            height="260px"
+            loader={<div>Yükleniyor...</div>}
+            data={[
+              ['Ay', 'Yeni Personel'],
+              ...iseAlimSerisi.map((i) => [i.ay, i.sayi]),
+            ]}
+            options={{
+              legend: { position: 'none' },
+              colors: ['#3b82f6'],
+              vAxis: { minValue: 0 },
+              chartArea: { left: 40, right: 10, top: 10, bottom: 40 },
+            }}
+          />
+        ) : (
+          <p className="text-slate-500 text-sm text-center py-6">
+            Henüz işe alım verisi bulunmuyor.
+          </p>
+        )}
       </div>
 
-      {/* Alt bölüm: grafik + son duyurular + son adaylar */}
+      {/* Alt bölüm: izin grafikleri + son duyurular + son adaylar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">
             İzin Durumu (Pasta Grafik)
           </h3>
           {izinToplam > 0 ? (
-            <div className="flex items-center gap-6">
-              <div className="relative w-32 h-32">
-                {(() => {
-                  const findValue = (key: string) =>
-                    izinStatsNormalized.find((s) => s.onay_durumu === key)?.sayi || 0
-                  const onay = findValue('Onaylandi')
-                  const bekle = findValue('Beklemede')
-                  const red = findValue('Reddedildi')
-                  const total = onay + bekle + red || 1
-                  const onayPct = (onay / total) * 100
-                  const beklePct = (bekle / total) * 100
-                  const redPct = (red / total) * 100
-
-                  const gradient = `conic-gradient(
-                    rgba(16, 185, 129, 0.9) 0 ${onayPct}%,
-                    rgba(245, 158, 11, 0.9) ${onayPct}% ${onayPct + beklePct}%,
-                    rgba(239, 68, 68, 0.9) ${onayPct + beklePct}% 100%
-                  )`
-
-                  return (
-                    <>
-                      <div
-                        className="w-full h-full rounded-full"
-                        style={{ backgroundImage: gradient }}
-                      />
-                      <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-slate-700">
-                          {izinToplam} izin
-                        </span>
-                      </div>
-                    </>
-                  )
-                })()}
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <span className="text-slate-700">Onaylanan</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-amber-500" />
-                  <span className="text-slate-700">Bekleyen</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-slate-700">Reddedilen</span>
-                </div>
-              </div>
-            </div>
+            <Chart
+              chartType="PieChart"
+              width="100%"
+              height="260px"
+              loader={<div>Yükleniyor...</div>}
+              data={[
+                ['Durum', 'Adet'],
+                ...izinStatsNormalized.map((i) => [i.onay_durumu, i.sayi]),
+              ]}
+              options={{
+                pieHole: 0.45,
+                legend: { position: 'right' },
+                slices: {
+                  0: { color: '#10b981' }, // Onaylandi
+                  1: { color: '#f59e0b' }, // Beklemede
+                  2: { color: '#ef4444' }, // Reddedildi
+                },
+                chartArea: { left: 10, right: 10, top: 10, bottom: 10 },
+              }}
+            />
           ) : (
             <p className="text-slate-500 text-sm text-center py-6">
               Henüz izin verisi bulunmuyor.
+            </p>
+          )}
+        </div>
+
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            İzin Türüne Göre Kullanılan Günler
+          </h3>
+          {izinTuruSerisi.length > 0 && izinTuruToplamGun > 0 ? (
+            <Chart
+              chartType="PieChart"
+              width="100%"
+              height="260px"
+              loader={<div>Yükleniyor...</div>}
+              data={[
+                ['İzin Türü', 'Gün'],
+                ...izinTuruSerisi.map((i) => [i.izin_adi, i.toplam_gun]),
+              ]}
+              options={{
+                pieHole: 0.45,
+                legend: { position: 'right' },
+                chartArea: { left: 10, right: 10, top: 10, bottom: 10 },
+              }}
+            />
+          ) : (
+            <p className="text-slate-500 text-sm text-center py-6">
+              Henüz izin kullanımı verisi bulunmuyor.
             </p>
           )}
         </div>

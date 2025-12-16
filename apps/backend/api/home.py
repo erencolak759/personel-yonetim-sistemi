@@ -125,6 +125,7 @@ def dashboard():
         """)
         departman_data = [{'departman_adi': row['departman_adi'], 'sayi': row['sayi']} for row in cursor.fetchall()]
 
+        # Son 6 ay devamsızlık trendi (ay bazında)
         cursor.execute("""
             SELECT DATE_FORMAT(tarih, '%Y-%m') as ay, COUNT(*) as sayi
             FROM Devam
@@ -134,6 +135,17 @@ def dashboard():
             ORDER BY ay ASC
         """)
         devamsizlik_data = [{'ay': row['ay'], 'sayi': row['sayi']} for row in cursor.fetchall()]
+
+        # Son 10 yılda her ay kaç yeni personel başladı (aylık işe alım trendi)
+        cursor.execute("""
+            SELECT DATE_FORMAT(ise_giris_tarihi, '%Y-%m') as ay,
+                   COUNT(*) as sayi
+            FROM Personel
+            WHERE ise_giris_tarihi >= DATE_SUB(CURDATE(), INTERVAL 10 YEAR)
+            GROUP BY DATE_FORMAT(ise_giris_tarihi, '%Y-%m')
+            ORDER BY ay ASC
+        """)
+        ise_alim_aylik = [{'ay': row['ay'], 'sayi': row['sayi']} for row in cursor.fetchall()]
 
         # İzin istatistikleri: admin için tüm sistem, çalışan için sadece kendisi
         # Not: Önceden sadece son 3 aylık izinler hesaba katılıyordu.
@@ -157,6 +169,38 @@ def dashboard():
                 (current_personel_id,),
             )
         izin_stats = [{'onay_durumu': row['onay_durumu'], 'sayi': row['sayi']} for row in cursor.fetchall()]
+
+        # İzin türüne göre toplam kullanılan gün sayısı (onaylanmış + bekleyen, reddedilen hariç)
+        if user_role == 'admin' or not current_personel_id:
+            cursor.execute(
+                """
+                SELECT t.izin_adi,
+                       SUM(k.gun_sayisi) AS toplam_gun
+                FROM Izin_Kayit k
+                JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
+                WHERE k.onay_durumu IN ('Beklemede', 'Onaylandi')
+                GROUP BY t.izin_adi
+                ORDER BY toplam_gun DESC
+                """
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT t.izin_adi,
+                       SUM(k.gun_sayisi) AS toplam_gun
+                FROM Izin_Kayit k
+                JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
+                WHERE k.onay_durumu IN ('Beklemede', 'Onaylandi')
+                  AND k.personel_id = %s
+                GROUP BY t.izin_adi
+                ORDER BY toplam_gun DESC
+                """,
+                (current_personel_id,),
+            )
+        izin_turu_gun = [
+            {'izin_adi': row['izin_adi'], 'toplam_gun': int(row['toplam_gun'] or 0)}
+            for row in cursor.fetchall()
+        ]
 
         cursor.execute("""
             SELECT d.departman_adi, ROUND(AVG(poz.taban_maas), 2) as ort_maas
@@ -223,7 +267,9 @@ def dashboard():
         print("Dashboard Hatası:", repr(e))
         departman_data = []
         devamsizlik_data = []
+        ise_alim_aylik = []
         izin_stats = []
+        izin_turu_gun = []
         maas_dept_data = []
         son_aktiviteler = []
         duyurular = []
@@ -244,7 +290,9 @@ def dashboard():
         },
         'departman_data': departman_data,
         'devamsizlik_data': devamsizlik_data,
+        'ise_alim_aylik': ise_alim_aylik,
         'izin_stats': izin_stats,
+        'izin_turu_gun': izin_turu_gun,
         'maas_dept_data': maas_dept_data,
         'son_aktiviteler': son_aktiviteler,
         'duyurular': duyurular,

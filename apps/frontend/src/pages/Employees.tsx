@@ -22,6 +22,7 @@ export default function Employees() {
   const [editModal, setEditModal] = useState<Employee | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState<Employee | null>(null)
+  const [selectedPozisyonId, setSelectedPozisyonId] = useState<string>('')
 
   const downloadEmployeeListPdf = async () => {
     try {
@@ -49,6 +50,14 @@ export default function Employees() {
     queryFn: async () => {
       const response = await api.get(`/employees?archived=${archivedView ? 1 : 0}`)
       return { personeller: response.data, departmanlar: [], pozisyonlar: [] }
+    },
+  })
+
+  const { data: formData } = useQuery<{ departmanlar: Department[]; pozisyonlar: Position[] }>({
+    queryKey: ['employee-form-data'],
+    queryFn: async () => {
+      const response = await api.get('/employees/form-data')
+      return response.data
     },
   })
 
@@ -231,6 +240,7 @@ export default function Employees() {
                             const res = await api.get(`/employees/${employee.personel_id}`)
                             const payload = res.data?.personel ?? res.data
                             setEditModal(payload)
+                            setSelectedPozisyonId(String(payload.pozisyon_id ?? ''))
                           } catch (err: any) {
                             toast.error(err?.response?.data?.error || 'Personel bilgileri alınamadı')
                           } finally {
@@ -347,6 +357,51 @@ export default function Employees() {
                   defaultValue={editModal.email || ''}
                   className="input"
                 />
+              </div>
+              <div>
+                <label className="label">Departman</label>
+                <select
+                  name="departman_id"
+                  defaultValue={String((editModal as any).departman_id ?? '')}
+                  className="input"
+                >
+                  <option value="">Seçiniz...</option>
+                  {formData?.departmanlar?.map((d) => (
+                    <option key={d.departman_id ?? d.id} value={d.departman_id ?? d.id}>
+                      {d.departman_adi ?? d.ad}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Pozisyon (Maaş)</label>
+                <select
+                  name="pozisyon_id"
+                  className="input"
+                  value={selectedPozisyonId}
+                  onChange={(e) => setSelectedPozisyonId(e.target.value)}
+                >
+                  <option value="">Seçiniz...</option>
+                  {formData?.pozisyonlar?.map((p) => (
+                    <option key={p.pozisyon_id ?? p.id} value={String(p.pozisyon_id ?? p.id)}>
+                      {(p.pozisyon_adi ?? p.ad) || 'Pozisyon'}{' '}
+                      {p.taban_maas != null ? `- ${Number(p.taban_maas).toLocaleString('tr-TR')} ₺` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedPozisyonId && (
+                  <p className="mt-1 text-xs text-slate-500">
+                    Seçili pozisyon taban maaşı:{' '}
+                    {(() => {
+                      const p = formData?.pozisyonlar?.find(
+                        (x) => String(x.pozisyon_id ?? x.id) === selectedPozisyonId,
+                      )
+                      return p?.taban_maas != null
+                        ? `${Number(p.taban_maas).toLocaleString('tr-TR')} ₺`
+                        : '-'
+                    })()}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="label">Doğum Tarihi</label>
