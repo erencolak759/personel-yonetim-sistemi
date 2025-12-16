@@ -106,11 +106,21 @@ def init_db():
             giris_saati TIME,
             cikis_saati TIME,
             durum VARCHAR(50) DEFAULT 'Normal',
+            ek_mesai_saat DECIMAL(8, 2) DEFAULT 0,
             aciklama TEXT,
             FOREIGN KEY (personel_id) REFERENCES Personel(personel_id),
             UNIQUE KEY unique_personel_tarih (personel_id, tarih)
         )
     ''')
+
+    # Eski kurulu veritabanlarında ek_mesai_saat kolonu olmayabilir; eklemeyi dene.
+    try:
+        cursor.execute(
+            "ALTER TABLE Devam ADD COLUMN ek_mesai_saat DECIMAL(8, 2) DEFAULT 0"
+        )
+    except Exception:
+        # Kolon zaten varsa hata alırız, bunu sessizce yoksay.
+        pass
 
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS Izin_Turu (
