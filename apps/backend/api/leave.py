@@ -20,15 +20,38 @@ def leaves():
     except Exception:
         aktif_flag = 1
 
+    # Kimlik bilgisi al
+    auth_header = request.headers.get('Authorization')
+    user_role = None
+    current_personel_id = None
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        payload = decode_token(token)
+        if payload:
+            user_role = payload.get('role')
+            current_personel_id = payload.get('personel_id')
+
     try:
+        conditions = ["p.aktif_mi = %s"]
+        params = [aktif_flag]
+
+        # Rol bazlı filtre: admin tüm kayıtları, çalışan sadece kendini görür
+        if user_role != 'admin':
+            if not current_personel_id:
+                return jsonify({'error': 'Personel bilgisi bulunamadı'}), 400
+            conditions.append("k.personel_id = %s")
+            params.append(current_personel_id)
+
         if filtre == 'bekleyen':
-            where_clause = "WHERE k.onay_durumu = 'Beklemede'"
+            conditions.append("k.onay_durumu = 'Beklemede'")
         elif filtre == 'onaylanan':
-            where_clause = "WHERE k.onay_durumu = 'Onaylandi'"
+            conditions.append("k.onay_durumu = 'Onaylandi'")
         elif filtre == 'reddedilen':
-            where_clause = "WHERE k.onay_durumu = 'Reddedildi'"
-        else:
-            where_clause = ""
+            conditions.append("k.onay_durumu = 'Reddedildi'")
+
+        where_clause = ""
+        if conditions:
+            where_clause = "WHERE " + " AND ".join(conditions)
 
         sql_list = f"""
             SELECT k.izin_kayit_id, k.personel_id, k.izin_turu_id,
@@ -38,10 +61,9 @@ def leaves():
             JOIN Personel p ON k.personel_id = p.personel_id
             JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
             {where_clause}
-            AND p.aktif_mi = %s
             ORDER BY k.baslangic_tarihi DESC
         """
-        cursor.execute(sql_list, (aktif_flag,))
+        cursor.execute(sql_list, tuple(params))
         rows = cursor.fetchall()
 
         izinler = [{
@@ -75,14 +97,38 @@ def leaves_pdf():
     conn = get_connection()
     cursor = conn.cursor()
 
+    # Kimlik bilgisi al
+    auth_header = request.headers.get('Authorization')
+    user_role = None
+    current_personel_id = None
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        payload = decode_token(token)
+        if payload:
+            user_role = payload.get('role')
+            current_personel_id = payload.get('personel_id')
+
     try:
-        where_clause = ''
+        conditions = []
         if filtre == 'bekleyen':
-            where_clause = "WHERE k.onay_durumu = 'Beklemede'"
+            conditions.append("k.onay_durumu = 'Beklemede'")
         elif filtre == 'onaylanan':
-            where_clause = "WHERE k.onay_durumu = 'Onaylandi'"
+            conditions.append("k.onay_durumu = 'Onaylandi'")
         elif filtre == 'reddedilen':
-            where_clause = "WHERE k.onay_durumu = 'Reddedildi'"
+            conditions.append("k.onay_durumu = 'Reddedildi'")
+
+        # Çalışanlar sadece kendi izinlerinin PDF'ini görebilsin
+        params = [aktif_flag]
+        base_condition = "p.aktif_mi = %s"
+        if user_role != 'admin':
+            if not current_personel_id:
+                return jsonify({'error': 'Personel bilgisi bulunamadı'}), 400
+            base_condition += " AND k.personel_id = %s"
+            params.append(current_personel_id)
+
+        where_clause = "WHERE " + base_condition
+        if conditions:
+            where_clause += " AND " + " AND ".join(conditions)
 
         sql = f"""
             SELECT k.baslangic_tarihi as bas, k.bitis_tarihi as bit, k.gun_sayisi, k.onay_durumu,
@@ -91,10 +137,9 @@ def leaves_pdf():
             JOIN Personel p ON k.personel_id = p.personel_id
             JOIN Izin_Turu t ON k.izin_turu_id = t.izin_turu_id
             {where_clause}
-            AND p.aktif_mi = %s
             ORDER BY k.baslangic_tarihi DESC
         """
-        cursor.execute(sql, (aktif_flag,))
+        cursor.execute(sql, tuple(params))
         rows = cursor.fetchall()
         gen = PDFGenerator()
         buffer = gen.izin_raporu_pdf(rows, filtre=filtre)

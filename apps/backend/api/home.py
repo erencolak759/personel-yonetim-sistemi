@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from utils.db import get_connection
-from api.auth import login_required
+from api.auth import login_required, decode_token
 import datetime
 
 home_bp = Blueprint('home', __name__, url_prefix='/api')
@@ -13,6 +13,17 @@ def dashboard():
     cursor = conn.cursor()
 
     bugun = datetime.date.today().strftime('%Y-%m-%d')
+
+    # Kullanıcı rolü ve personel bilgisi
+    auth_header = request.headers.get('Authorization')
+    user_role = None
+    current_personel_id = None
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        payload = decode_token(token)
+        if payload:
+            user_role = payload.get('role')
+            current_personel_id = payload.get('personel_id')
 
     izinli_sayisi = 0
     toplam_personel = 0
@@ -32,7 +43,14 @@ def dashboard():
         if row:
             toplam_personel = row['cnt']
 
-        cursor.execute("SELECT COUNT(*) as cnt FROM Izin_Kayit WHERE onay_durumu = 'Beklemede'")
+        # Bekleyen işler: admin için tüm sistem, çalışan için sadece kendisi
+        if user_role == 'admin' or not current_personel_id:
+            cursor.execute("SELECT COUNT(*) as cnt FROM Izin_Kayit WHERE onay_durumu = 'Beklemede'")
+        else:
+            cursor.execute(
+                "SELECT COUNT(*) as cnt FROM Izin_Kayit WHERE onay_durumu = 'Beklemede' AND personel_id = %s",
+                (current_personel_id,),
+            )
         row = cursor.fetchone()
         if row:
             bekleyen_isler = row['cnt']
@@ -117,12 +135,27 @@ def dashboard():
         """)
         devamsizlik_data = [{'ay': row['ay'], 'sayi': row['sayi']} for row in cursor.fetchall()]
 
-        cursor.execute("""
-            SELECT onay_durumu, COUNT(*) as sayi
-            FROM Izin_Kayit
-            WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
-            GROUP BY onay_durumu
-        """)
+        # İzin istatistikleri: admin için tüm sistem, çalışan için sadece kendisi
+        if user_role == 'admin' or not current_personel_id:
+            cursor.execute(
+                """
+                SELECT onay_durumu, COUNT(*) as sayi
+                FROM Izin_Kayit
+                WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                GROUP BY onay_durumu
+                """
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT onay_durumu, COUNT(*) as sayi
+                FROM Izin_Kayit
+                WHERE baslangic_tarihi >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+                  AND personel_id = %s
+                GROUP BY onay_durumu
+                """,
+                (current_personel_id,),
+            )
         izin_stats = [{'onay_durumu': row['onay_durumu'], 'sayi': row['sayi']} for row in cursor.fetchall()]
 
         cursor.execute("""

@@ -15,6 +15,7 @@ import Settings from './pages/Settings'
 import ChangePassword from './pages/ChangePassword'
 import UserHome from './pages/UserDashboard'
 import UserPayroll from './pages/UserPayroll'
+import Apply from './pages/Apply'
 import Users from './pages/Users'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -65,6 +66,7 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/apply" element={<Apply />} />
         <Route
           path="/admin"
           element={

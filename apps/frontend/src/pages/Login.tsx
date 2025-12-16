@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Fingerprint, User as UserIcon, Lock, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -106,6 +106,12 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          <div className="mt-4 text-center">
+            <Link to="/apply" className="text-sm text-primary-600 hover:text-primary-700 font-semibold">
+              Başvuru Yap
+            </Link>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-slate-200 text-center">
             <p className="text-xs text-slate-400">
