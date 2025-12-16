@@ -23,6 +23,8 @@ export default function Employees() {
   const [modalLoading, setModalLoading] = useState(false)
   const [deleteModal, setDeleteModal] = useState<Employee | null>(null)
   const [selectedPozisyonId, setSelectedPozisyonId] = useState<string>('')
+  const [selectedKidem, setSelectedKidem] = useState<number>(3)
+  const [manualSalary, setManualSalary] = useState<string>('')
 
   const downloadEmployeeListPdf = async () => {
     try {
@@ -71,32 +73,17 @@ export default function Employees() {
   })
 
   const editMutation = useMutation({
-    mutationFn: async (payload: any) => {
-      const data = { ...payload.personelData }
+    mutationFn: async (personelData: any) => {
+      const data = { ...personelData }
       const id = data.personel_id as number
       delete data.personel_id
       const res = await api.put(`/employees/${id}`, data)
-      return { res, payload }
+      return res
     },
-    onSuccess: async (result: any) => {
-      const { payload } = result
-      try {
-        if (payload?.account && payload.account.username && payload.account.password) {
-          await api.post('/users', {
-            kullanici_adi: payload.account.username,
-            sifre: payload.account.password,
-            email: payload.personelData.email || null,
-            rol: payload.account.role || 'employee',
-            personel_id: payload.personelData.personel_id,
-          })
-        }
-
-        toast.success('Personel bilgileri güncellendi')
-        queryClient.invalidateQueries({ queryKey: ['employees', archivedView] })
-        setEditModal(null)
-      } catch (err: any) {
-        toast.error(err?.response?.data?.error || 'Güncelleme sonrası işlem hatası')
-      }
+    onSuccess: () => {
+      toast.success('Personel bilgileri güncellendi')
+      queryClient.invalidateQueries({ queryKey: ['employees', archivedView] })
+      setEditModal(null)
     },
   })
 
@@ -185,6 +172,9 @@ export default function Employees() {
                   Pozisyon
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">
+                  Kıdem
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">
                   Maaş
                 </th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">
@@ -219,6 +209,9 @@ export default function Employees() {
                   <td className="py-4 px-6 text-sm text-slate-600">
                     {employee.pozisyon_adi || '-'}
                   </td>
+                  <td className="py-4 px-6 text-sm text-slate-600">
+                    {employee.kidem_seviyesi ? `Kıdem ${employee.kidem_seviyesi}` : '-'}
+                  </td>
                   <td className="py-4 px-6 text-sm font-medium text-emerald-600">
                     {(employee.taban_maas !== undefined && employee.taban_maas !== null) ? Number(employee.taban_maas).toLocaleString('tr-TR') + ' ₺' : '-'}
                   </td>
@@ -241,6 +234,12 @@ export default function Employees() {
                             const payload = res.data?.personel ?? res.data
                             setEditModal(payload)
                             setSelectedPozisyonId(String(payload.pozisyon_id ?? ''))
+                            setSelectedKidem(Number((payload as any).kidem_seviyesi ?? 3))
+                            setManualSalary(
+                              (payload as any).ozel_taban_maas != null
+                                ? String((payload as any).ozel_taban_maas)
+                                : ''
+                            )
                           } catch (err: any) {
                             toast.error(err?.response?.data?.error || 'Personel bilgileri alınamadı')
                           } finally {
@@ -301,15 +300,12 @@ export default function Employees() {
               onSubmit={(e) => {
                   e.preventDefault()
                   const formData = new FormData(e.currentTarget)
-                  const personelData = Object.fromEntries(formData as any)
+                  const personelData: any = Object.fromEntries(formData as any)
                   personelData.personel_id = editModal.personel_id
-                  const account = {
-                    username: formData.get('kullanici_adi') as string,
-                    password: formData.get('sifre') as string,
-                    role: (formData.get('rol') as string) || 'employee'
-                  }
+                  personelData.kidem_seviyesi = selectedKidem
+                  personelData.ozel_taban_maas = manualSalary ? Number(manualSalary) : null
 
-                  editMutation.mutate({ personelData, account })
+                  editMutation.mutate(personelData)
                 }}
               className="p-6 space-y-4 overflow-y-auto"
             >
@@ -358,50 +354,94 @@ export default function Employees() {
                   className="input"
                 />
               </div>
-              <div>
-                <label className="label">Departman</label>
-                <select
-                  name="departman_id"
-                  defaultValue={String((editModal as any).departman_id ?? '')}
-                  className="input"
-                >
-                  <option value="">Seçiniz...</option>
-                  {formData?.departmanlar?.map((d) => (
-                    <option key={d.departman_id ?? d.id} value={d.departman_id ?? d.id}>
-                      {d.departman_adi ?? d.ad}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="label">Pozisyon (Maaş)</label>
-                <select
-                  name="pozisyon_id"
-                  className="input"
-                  value={selectedPozisyonId}
-                  onChange={(e) => setSelectedPozisyonId(e.target.value)}
-                >
-                  <option value="">Seçiniz...</option>
-                  {formData?.pozisyonlar?.map((p) => (
-                    <option key={p.pozisyon_id ?? p.id} value={String(p.pozisyon_id ?? p.id)}>
-                      {(p.pozisyon_adi ?? p.ad) || 'Pozisyon'}{' '}
-                      {p.taban_maas != null ? `- ${Number(p.taban_maas).toLocaleString('tr-TR')} ₺` : ''}
-                    </option>
-                  ))}
-                </select>
-                {selectedPozisyonId && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    Seçili pozisyon taban maaşı:{' '}
+              <div className="border-t border-slate-200 pt-4 mt-2">
+                <h4 className="text-sm font-semibold text-slate-900 mb-2">Departman & Maaş</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="label">Departman</label>
+                    <select
+                      name="departman_id"
+                      defaultValue={String((editModal as any).departman_id ?? '')}
+                      className="input"
+                    >
+                      <option value="">Seçiniz...</option>
+                      {formData?.departmanlar?.map((d) => (
+                        <option key={d.departman_id ?? d.id} value={d.departman_id ?? d.id}>
+                          {d.departman_adi ?? d.ad}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Pozisyon</label>
+                    <select
+                      name="pozisyon_id"
+                      className="input"
+                      value={selectedPozisyonId}
+                      onChange={(e) => setSelectedPozisyonId(e.target.value)}
+                    >
+                      <option value="">Seçiniz...</option>
+                      {formData?.pozisyonlar?.map((p) => (
+                        <option key={p.pozisyon_id ?? p.id} value={String(p.pozisyon_id ?? p.id)}>
+                          {(p.pozisyon_adi ?? p.ad) || 'Pozisyon'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Kıdem</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[1, 2, 3].map((k) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => setSelectedKidem(k)}
+                          className={`px-2 py-1 rounded-lg text-xs border ${
+                            selectedKidem === k
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-slate-200 text-slate-600 hover:border-primary-300'
+                          }`}
+                        >
+                          Kıdem {k}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label">Özel Maaş (opsiyonel)</label>
+                    <input
+                      type="number"
+                      name="ozel_taban_maas"
+                      value={manualSalary}
+                      onChange={(e) => setManualSalary(e.target.value)}
+                      className="input"
+                      placeholder="Örneğin 55000"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Dolu ise bu tutar kullanılacak, boş bırakılırsa kıdem formülüne göre maaş
+                      hesaplanır.
+                    </p>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    <span className="font-medium text-slate-700">Maaş Önizleme: </span>
                     {(() => {
                       const p = formData?.pozisyonlar?.find(
                         (x) => String(x.pozisyon_id ?? x.id) === selectedPozisyonId,
                       )
-                      return p?.taban_maas != null
-                        ? `${Number(p.taban_maas).toLocaleString('tr-TR')} ₺`
-                        : '-'
+                      const base = p?.taban_maas ?? 0
+                      const diff = (selectedKidem - 1) * 15000
+                      const auto = base + diff
+                      const effective = manualSalary ? Number(manualSalary) : auto
+                      if (!effective) return '-'
+                      if (manualSalary) {
+                        return `${effective.toLocaleString('tr-TR')} ₺ (Özel maaş)`
+                      }
+                      return `${effective.toLocaleString('tr-TR')} ₺ (Taban ${base.toLocaleString(
+                        'tr-TR',
+                      )} ₺ + ${diff.toLocaleString('tr-TR')} ₺)`
                     })()}
-                  </p>
-                )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="label">Doğum Tarihi</label>
@@ -416,21 +456,6 @@ export default function Employees() {
                   className="input"
                   required
                 />
-              </div>
-              <div>
-                <label className="label">Kullanıcı Adı (opsiyonel)</label>
-                <input name="kullanici_adi" className="input" placeholder="hesap kullanıcı adı" />
-              </div>
-              <div>
-                <label className="label">Şifre (opsiyonel)</label>
-                <input name="sifre" type="password" className="input" placeholder="şifre" />
-              </div>
-              <div>
-                <label className="label">Rol</label>
-                <select name="rol" className="input">
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
-                </select>
               </div>
               <div className="flex gap-3 pt-4">
                 <button

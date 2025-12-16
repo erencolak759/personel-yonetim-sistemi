@@ -40,7 +40,9 @@ export default function AddEmployee() {
     e.preventDefault()
     setIsSubmitting(true)
     const formData = new FormData(e.currentTarget)
-    const personelData = Object.fromEntries(formData as any)
+    const personelData: any = Object.fromEntries(formData as any)
+    personelData.kidem_seviyesi = selectedKidem
+    personelData.ozel_taban_maas = manualSalary ? Number(manualSalary) : null
     if (!personelData.kullanici_adi || !personelData.sifre) {
       toast.error('Kullanıcı adı ve şifre zorunludur')
       setIsSubmitting(false)
@@ -53,6 +55,8 @@ export default function AddEmployee() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [filteredPositions, setFilteredPositions] = useState<Position[]>([])
   const [selectedPozisyonId, setSelectedPozisyonId] = useState<string>('')
+  const [selectedKidem, setSelectedKidem] = useState<number>(3)
+  const [manualSalary, setManualSalary] = useState<string>('')
 
   useEffect(() => {
     if (!data) return
@@ -158,7 +162,7 @@ export default function AddEmployee() {
               </select>
             </div>
             <div>
-              <label className="label">Pozisyon (Maaş Otomatik)</label>
+              <label className="label">Pozisyon</label>
               <select
                 name="pozisyon_id"
                 className="input"
@@ -169,10 +173,65 @@ export default function AddEmployee() {
                 <option value="">Seçiniz...</option>
                 {filteredPositions?.map((p) => (
                   <option key={(p as any).pozisyon_id ?? p.id} value={(p as any).pozisyon_id ?? p.id}>
-                    {(p as any).pozisyon_adi ?? p.ad} (Taban: {p.taban_maas ? Number(p.taban_maas).toLocaleString('tr-TR') + ' ₺' : '-'})
+                    {(p as any).pozisyon_adi ?? p.ad}
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200 mt-2">
+              <div>
+                <label className="label">Kıdem</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setSelectedKidem(k)}
+                      className={`px-2 py-1 rounded-lg text-xs border ${
+                        selectedKidem === k
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-slate-200 text-slate-600 hover:border-primary-300'
+                      }`}
+                    >
+                      Kıdem {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="label">Özel Maaş (opsiyonel)</label>
+                <input
+                  type="number"
+                  name="ozel_taban_maas"
+                  value={manualSalary}
+                  onChange={(e) => setManualSalary(e.target.value)}
+                  className="input"
+                  placeholder="Örneğin 55000"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Dolu ise bu tutar kullanılacak, boş bırakılırsa kıdem formülüne göre maaş
+                  hesaplanır.
+                </p>
+              </div>
+              <div className="text-xs text-slate-500">
+                <span className="font-medium text-slate-700">Maaş Önizleme: </span>
+                {(() => {
+                  const p = filteredPositions?.find(
+                    (x) => String((x as any).pozisyon_id ?? x.id) === selectedPozisyonId,
+                  )
+                  const base = p?.taban_maas ?? 0
+                  const diff = (selectedKidem - 1) * 15000
+                  const auto = base + diff
+                  const effective = manualSalary ? Number(manualSalary) : auto
+                  if (!effective) return '-'
+                  if (manualSalary) {
+                    return `${effective.toLocaleString('tr-TR')} ₺ (Özel maaş)`
+                  }
+                  return `${effective.toLocaleString('tr-TR')} ₺ (Taban ${base.toLocaleString(
+                    'tr-TR',
+                  )} ₺ + ${diff.toLocaleString('tr-TR')} ₺)`
+                })()}
+              </div>
             </div>
           </div>
         </div>

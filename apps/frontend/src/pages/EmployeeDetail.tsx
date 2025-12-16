@@ -26,6 +26,7 @@ interface EmployeeDetailData {
     departman_adi: string | null
     pozisyon_adi: string | null
     taban_maas: number | null
+    kidem_seviyesi?: number | null
   }
   devam_ozet: { durum: string; adet: number }[]
   izinler: {
@@ -119,7 +120,8 @@ export default function EmployeeDetail() {
           </h1>
           <p className="text-slate-500">
             {personel.pozisyon_adi || 'Pozisyon Belirtilmemiş'} •{' '}
-            {personel.departman_adi || 'Departman Belirtilmemiş'}
+            {personel.departman_adi || 'Departman Belirtilmemiş'}{' '}
+            {personel.kidem_seviyesi ? `• Kıdem ${personel.kidem_seviyesi}` : ''}
           </p>
         </div>
       </div>
@@ -171,7 +173,11 @@ export default function EmployeeDetail() {
               <InfoRow label="İşe Giriş" value={personel.ise_giris_tarihi} />
               <InfoRow label="Departman" value={personel.departman_adi || '-'} />
               <InfoRow
-                label="Taban Maaş"
+                label="Kıdem"
+                value={personel.kidem_seviyesi ? `Kıdem ${personel.kidem_seviyesi}` : '-'}
+              />
+              <InfoRow
+                label="Maaş"
                 value={`${personel.taban_maas?.toLocaleString('tr-TR') || 0} ₺`}
                 highlight
               />

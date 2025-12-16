@@ -240,7 +240,8 @@ def salary_generate():
         sql = """
             SELECT p.personel_id,
                    poz.taban_maas,
-                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi
+                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+                   pp.ozel_taban_maas
             FROM Personel p
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
             LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
@@ -288,7 +289,11 @@ def salary_generate():
             kidem_level = int(row.get('kidem_seviyesi') or 3)
             if kidem_level < 1:
                 kidem_level = 1
-            taban = base + Decimal('15000') * Decimal(kidem_level - 1)
+            auto_taban = base + Decimal('15000') * Decimal(kidem_level - 1)
+            if row.get('ozel_taban_maas') is not None:
+                taban = Decimal(row.get('ozel_taban_maas'))
+            else:
+                taban = auto_taban
             try:
                 cursor.execute("SELECT maas_hesap_id FROM Maas_Hesap WHERE personel_id = %s AND donem_yil = %s AND donem_ay = %s", (pid, yil, ay))
                 existing = [r['maas_hesap_id'] for r in cursor.fetchall()]
@@ -413,7 +418,8 @@ def salary_preview():
         sql = """
             SELECT p.personel_id, p.ad, p.soyad,
                    poz.taban_maas,
-                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi
+                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+                   pp.ozel_taban_maas
             FROM Personel p
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
             LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
@@ -434,7 +440,11 @@ def salary_preview():
             kidem_level = int(row.get('kidem_seviyesi') or 3)
             if kidem_level < 1:
                 kidem_level = 1
-            taban = base + Decimal('15000') * Decimal(kidem_level - 1)
+            auto_taban = base + Decimal('15000') * Decimal(kidem_level - 1)
+            if row.get('ozel_taban_maas') is not None:
+                taban = Decimal(row.get('ozel_taban_maas'))
+            else:
+                taban = auto_taban
             cursor.execute("""
                 SELECT ik.baslangic_tarihi as bas, ik.bitis_tarihi as bit, it.ucretli_mi as ucretli
                 FROM Izin_Kayit ik

@@ -62,7 +62,9 @@ def employee_list_report():
             p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
             d.departman_id, d.departman_adi,
             poz.pozisyon_id, poz.pozisyon_adi,
-            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
+            COALESCE(pp.ozel_taban_maas, poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas,
+            COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+            pp.ozel_taban_maas
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -101,7 +103,9 @@ def employee_list_report():
             'departman_adi': row['departman_adi'],
             'pozisyon_id': row['pozisyon_id'],
             'pozisyon_adi': row['pozisyon_adi'],
-            'taban_maas': row['taban_maas']
+            'taban_maas': row['taban_maas'],
+            'kidem_seviyesi': row.get('kidem_seviyesi'),
+            'ozel_taban_maas': row.get('ozel_taban_maas'),
         } for row in rows]
 
         gen = PDFGenerator()
@@ -127,7 +131,9 @@ def employee_detail_report(personel_id):
                 p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
                 d.departman_id, d.departman_adi,
                 poz.pozisyon_id, poz.pozisyon_adi,
-                poz.taban_maas
+                COALESCE(pp.ozel_taban_maas, poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas,
+                COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+                pp.ozel_taban_maas
             FROM Personel p
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -154,7 +160,9 @@ def employee_detail_report(personel_id):
             'departman_adi': row['departman_adi'],
             'pozisyon_id': row['pozisyon_id'],
             'pozisyon_adi': row['pozisyon_adi'],
-            'taban_maas': row['taban_maas']
+            'taban_maas': row['taban_maas'],
+            'kidem_seviyesi': row.get('kidem_seviyesi'),
+            'ozel_taban_maas': row.get('ozel_taban_maas'),
         }
 
         cursor.execute("""
@@ -229,7 +237,9 @@ def employee_list():
             p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
             d.departman_id, d.departman_adi,
             poz.pozisyon_id, poz.pozisyon_adi,
-            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
+            COALESCE(pp.ozel_taban_maas, poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas,
+            COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+            pp.ozel_taban_maas
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -269,7 +279,9 @@ def employee_list():
             'departman_adi': row['departman_adi'],
             'pozisyon_id': row['pozisyon_id'],
             'pozisyon_adi': row['pozisyon_adi'],
-            'taban_maas': row['taban_maas']
+            'taban_maas': row['taban_maas'],
+            'kidem_seviyesi': row.get('kidem_seviyesi'),
+            'ozel_taban_maas': row.get('ozel_taban_maas'),
         } for row in rows]
 
         return jsonify(personeller)
@@ -292,8 +304,10 @@ def employee_detail(personel_id):
                 p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
                 p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
                 d.departman_id, d.departman_adi,
-            poz.pozisyon_id, poz.pozisyon_adi,
-            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
+                poz.pozisyon_id, poz.pozisyon_adi,
+                COALESCE(pp.ozel_taban_maas, poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas,
+                COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi,
+                pp.ozel_taban_maas
             FROM Personel p
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -320,7 +334,9 @@ def employee_detail(personel_id):
             'departman_adi': row['departman_adi'],
             'pozisyon_id': row['pozisyon_id'],
             'pozisyon_adi': row['pozisyon_adi'],
-            'taban_maas': row['taban_maas']
+            'taban_maas': row['taban_maas'],
+            'kidem_seviyesi': row.get('kidem_seviyesi'),
+            'ozel_taban_maas': row.get('ozel_taban_maas'),
         }
 
         cursor.execute("""
@@ -428,9 +444,14 @@ def employee_add():
         personel_id = cursor.lastrowid
         if data.get('pozisyon_id'):
             cursor.execute("""
-                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (%s, %s, CURDATE(), 1)
-            """, (personel_id, data.get('pozisyon_id')))
+                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi, ozel_taban_maas)
+                VALUES (%s, %s, CURDATE(), 1, %s, %s)
+            """, (
+                personel_id,
+                data.get('pozisyon_id'),
+                data.get('kidem_seviyesi', 3),
+                data.get('ozel_taban_maas'),
+            ))
 
         password_hash = generate_password_hash(sifre)
         cursor.execute('''
@@ -469,15 +490,27 @@ def employee_edit(personel_id):
             sql = f"UPDATE Personel SET {', '.join(sql_parts)} WHERE personel_id = %s"
             cursor.execute(sql, params)
 
+        ozel_taban_maas = data.get('ozel_taban_maas')
+
         if data.get('pozisyon_id'):
             cursor.execute("""
                 UPDATE Personel_Pozisyon SET guncel_mi = 0, bitis_tarihi = CURDATE() 
                 WHERE personel_id = %s AND guncel_mi = 1
             """, (personel_id,))
             cursor.execute("""
-                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi)
-                VALUES (%s, %s, CURDATE(), 1, %s)
-            """, (personel_id, data.get('pozisyon_id'), data.get('kidem_seviyesi', 3)))
+                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi, ozel_taban_maas)
+                VALUES (%s, %s, CURDATE(), 1, %s, %s)
+            """, (personel_id, data.get('pozisyon_id'), data.get('kidem_seviyesi', 3), ozel_taban_maas))
+        elif ozel_taban_maas is not None:
+            # Pozisyon değişmeden sadece özel maaş güncelle
+            cursor.execute(
+                """
+                UPDATE Personel_Pozisyon
+                SET ozel_taban_maas = %s
+                WHERE personel_id = %s AND guncel_mi = 1
+                """,
+                (ozel_taban_maas, personel_id),
+            )
 
         conn.commit()
         return jsonify({'message': 'Personel bilgileri güncellendi'})

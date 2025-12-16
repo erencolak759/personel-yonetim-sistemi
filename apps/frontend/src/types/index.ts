@@ -21,6 +21,8 @@ export interface Employee {
   departman_adi: string | null
   pozisyon_adi: string | null
   taban_maas: number | null
+  kidem_seviyesi?: number | null
+  ozel_taban_maas?: number | null
   aktif_mi: boolean
 }
 
