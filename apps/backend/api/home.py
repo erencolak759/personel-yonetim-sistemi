@@ -37,32 +37,33 @@ def dashboard():
         if row:
             bekleyen_isler = row['cnt']
 
-        # Bu ay ödenen toplam net maaş (önce odeme_tarihi'ne, yoksa donem_yil/ay'a göre)
+        # Aktif personeller için güncel net maaş toplamı
+        # - Her personel için en güncel Maas_Hesap kaydının net_maas'ı
+        # - Eğer hiç bordro yoksa ilgili pozisyonun taban_maas'ı kullanılır
         cursor.execute(
             """
-            SELECT COALESCE(SUM(net_maas), 0) AS toplam_odenen
-            FROM Maas_Hesap
-            WHERE odendi_mi = 1
-              AND (
-                    (odeme_tarihi IS NOT NULL AND DATE_FORMAT(odeme_tarihi, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m'))
-                 OR (odeme_tarihi IS NULL AND donem_yil = YEAR(CURDATE()) AND donem_ay = MONTH(CURDATE()))
-              )
+            WITH latest_payroll AS (
+                SELECT mh.personel_id,
+                       mh.net_maas,
+                       ROW_NUMBER() OVER (
+                         PARTITION BY mh.personel_id
+                         ORDER BY mh.donem_yil DESC, mh.donem_ay DESC, mh.maas_hesap_id DESC
+                       ) AS rn
+                FROM Maas_Hesap mh
+            )
+            SELECT COALESCE(SUM(COALESCE(lp.net_maas, poz.taban_maas, 0)), 0) AS toplam_net
+            FROM Personel p
+            LEFT JOIN latest_payroll lp
+              ON lp.personel_id = p.personel_id AND lp.rn = 1
+            LEFT JOIN Personel_Pozisyon pp
+              ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
+            LEFT JOIN Pozisyon poz
+              ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.aktif_mi = 1
             """
         )
         row = cursor.fetchone()
-        odenen_maas = float(row.get("toplam_odenen", 0) or 0) if row else 0.0
-
-        # Eğer bu ay için ödeme yoksa, toplam ödenen maaşı göster (0 görünmesin diye fallback)
-        if odenen_maas == 0:
-            cursor.execute(
-                """
-                SELECT COALESCE(SUM(net_maas), 0) AS toplam_odenen
-                FROM Maas_Hesap
-                WHERE odendi_mi = 1
-                """
-            )
-            row = cursor.fetchone()
-            odenen_maas = float(row.get("toplam_odenen", 0) or 0) if row else 0.0
+        odenen_maas = float(row.get("toplam_net", 0) or 0) if row else 0.0
 
         # Aktif personel için teorik maaş bütçesi (taban maaşların toplamı)
         cursor.execute(
