@@ -19,6 +19,9 @@ interface CandidateForm {
 export default function Candidates() {
   const queryClient = useQueryClient()
 
+  const [approveModal, setApproveModal] = useState<{ id: number; ad: string; soyad: string } | null>(null)
+  const [selectedKidem, setSelectedKidem] = useState<number>(3)
+
   const [form, setForm] = useState<CandidateForm>({
     ad: '',
     soyad: '',
@@ -72,8 +75,10 @@ export default function Candidates() {
   })
 
   const approveMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await api.post(`/candidates/${id}/approve`)
+    mutationFn: async (payload: { id: number; kidem_seviyesi: number }) => {
+      const res = await api.post(`/candidates/${payload.id}/approve`, {
+        kidem_seviyesi: payload.kidem_seviyesi,
+      })
       return res.data
     },
     onSuccess: (data) => {
@@ -82,6 +87,7 @@ export default function Candidates() {
         toast.success(`Kullanıcı: ${data.username} / Şifre: ${data.password}`)
       }
       queryClient.invalidateQueries({ queryKey: ['candidates'] })
+      setApproveModal(null)
     },
     onError: (err: any) => {
       toast.error(err?.response?.data?.error || 'Onay başarısız')
@@ -195,7 +201,10 @@ export default function Candidates() {
                     <div className="flex gap-2 mt-2 justify-end">
                       <button
                         className="btn btn-primary btn-sm"
-                        onClick={() => approveMutation.mutate(c.aday_id)}
+                        onClick={() => {
+                          setApproveModal({ id: c.aday_id, ad: c.ad, soyad: c.soyad })
+                          setSelectedKidem(3)
+                        }}
                         disabled={approveMutation.isPending}
                       >
                         Onayla
@@ -344,6 +353,65 @@ export default function Candidates() {
           </form>
         </div>
       </div>
+
+      {approveModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div className="p-6 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Kıdem Seçimi</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {approveModal.ad} {approveModal.soyad} için kıdem seviyesini seçin.
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                {[1, 2, 3].map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setSelectedKidem(k)}
+                    className={`w-full px-4 py-3 rounded-xl border text-left text-sm transition ${
+                      selectedKidem === k
+                        ? 'border-primary-500 bg-primary-50 text-primary-800'
+                        : 'border-slate-200 hover:border-primary-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="font-semibold">Kıdem {k}</span>
+                    <span className="block text-xs text-slate-500 mt-1">
+                      {k === 1 && 'Pozisyon taban maaşı'}
+                      {k === 2 && '1. kıdeme göre +15.000 ₺'}
+                      {k === 3 && '2. kıdeme göre +15.000 ₺ (en yüksek kıdem)'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setApproveModal(null)}
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={approveMutation.isPending}
+                onClick={() => {
+                  if (!approveModal) return
+                  approveMutation.mutate({
+                    id: approveModal.id,
+                    kidem_seviyesi: selectedKidem,
+                  })
+                }}
+              >
+                {approveMutation.isPending ? 'Onaylanıyor...' : 'Onayı Tamamla'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

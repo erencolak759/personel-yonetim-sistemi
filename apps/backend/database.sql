@@ -107,7 +107,8 @@
 	  pozisyon_id INT NOT NULL,
 	  baslangic_tarihi DATE NOT NULL,
 	  bitis_tarihi DATE NULL,
-	  guncel_mi TINYINT DEFAULT 1,
+  guncel_mi TINYINT DEFAULT 1,
+  kidem_seviyesi INT DEFAULT 3,
 	  FOREIGN KEY (personel_id) REFERENCES Personel(personel_id),
 	  FOREIGN KEY (pozisyon_id) REFERENCES Pozisyon(pozisyon_id)
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -278,6 +279,6 @@ CREATE TABLE Devam (
 	('12345678901', 'Ahmet', 'Yılmaz', '1990-05-15', '05551234567', 'ahmet@firma.com', 'İstanbul', '2020-01-10', 1, 1),
 	('98765432109', 'Ayşe', 'Demir',  '1988-08-20', '05559876543', 'ayse@firma.com',  'Ankara',  '2019-03-15', 2, 1);
 	
-	INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi) VALUES
-	(1, 1, '2020-01-10', 1),
-	(2, 2, '2019-03-15', 1);
+INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi) VALUES
+(1, 1, '2020-01-10', 1, 3),
+(2, 2, '2019-03-15', 1, 3);

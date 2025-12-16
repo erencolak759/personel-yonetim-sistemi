@@ -238,7 +238,9 @@ def salary_generate():
 
     try:
         sql = """
-            SELECT p.personel_id, poz.taban_maas
+            SELECT p.personel_id,
+                   poz.taban_maas,
+                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi
             FROM Personel p
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
             LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
@@ -282,7 +284,11 @@ def salary_generate():
         created = []
         for row in employees:
             pid = row['personel_id']
-            taban = Decimal(row.get('taban_maas') or 0)
+            base = Decimal(row.get('taban_maas') or 0)
+            kidem_level = int(row.get('kidem_seviyesi') or 3)
+            if kidem_level < 1:
+                kidem_level = 1
+            taban = base + Decimal('15000') * Decimal(kidem_level - 1)
             try:
                 cursor.execute("SELECT maas_hesap_id FROM Maas_Hesap WHERE personel_id = %s AND donem_yil = %s AND donem_ay = %s", (pid, yil, ay))
                 existing = [r['maas_hesap_id'] for r in cursor.fetchall()]
@@ -405,7 +411,9 @@ def salary_preview():
 
     try:
         sql = """
-            SELECT p.personel_id, p.ad, p.soyad, poz.taban_maas
+            SELECT p.personel_id, p.ad, p.soyad,
+                   poz.taban_maas,
+                   COALESCE(pp.kidem_seviyesi, 3) AS kidem_seviyesi
             FROM Personel p
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
             LEFT JOIN Pozisyon poz ON pp.pozisyon_id = poz.pozisyon_id
@@ -422,7 +430,11 @@ def salary_preview():
         previews = []
         for row in employees:
             pid = row['personel_id']
-            taban = Decimal(row.get('taban_maas') or 0)
+            base = Decimal(row.get('taban_maas') or 0)
+            kidem_level = int(row.get('kidem_seviyesi') or 3)
+            if kidem_level < 1:
+                kidem_level = 1
+            taban = base + Decimal('15000') * Decimal(kidem_level - 1)
             cursor.execute("""
                 SELECT ik.baslangic_tarihi as bas, ik.bitis_tarihi as bit, it.ucretli_mi as ucretli
                 FROM Izin_Kayit ik

@@ -62,7 +62,7 @@ def employee_list_report():
             p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
             d.departman_id, d.departman_adi,
             poz.pozisyon_id, poz.pozisyon_adi,
-            poz.taban_maas
+            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -229,7 +229,7 @@ def employee_list():
             p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
             d.departman_id, d.departman_adi,
             poz.pozisyon_id, poz.pozisyon_adi,
-            poz.taban_maas
+            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
         FROM Personel p
         LEFT JOIN Departman d ON p.departman_id = d.departman_id
         LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -292,8 +292,8 @@ def employee_detail(personel_id):
                 p.personel_id, p.tc_kimlik_no, p.ad, p.soyad, p.telefon, p.email,
                 p.ise_giris_tarihi, p.dogum_tarihi, p.adres, p.aktif_mi,
                 d.departman_id, d.departman_adi,
-                poz.pozisyon_id, poz.pozisyon_adi,
-                poz.taban_maas
+            poz.pozisyon_id, poz.pozisyon_adi,
+            (poz.taban_maas + (COALESCE(pp.kidem_seviyesi, 3) - 1) * 15000) AS taban_maas
             FROM Personel p
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
             LEFT JOIN Personel_Pozisyon pp ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
@@ -475,9 +475,9 @@ def employee_edit(personel_id):
                 WHERE personel_id = %s AND guncel_mi = 1
             """, (personel_id,))
             cursor.execute("""
-                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (%s, %s, CURDATE(), 1)
-            """, (personel_id, data.get('pozisyon_id')))
+                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi)
+                VALUES (%s, %s, CURDATE(), 1, %s)
+            """, (personel_id, data.get('pozisyon_id'), data.get('kidem_seviyesi', 3)))
 
         conn.commit()
         return jsonify({'message': 'Personel bilgileri güncellendi'})

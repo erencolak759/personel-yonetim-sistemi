@@ -182,6 +182,14 @@ def approve_candidate(aday_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     try:
+        data = request.get_json() or {}
+        try:
+            kidem_seviyesi = int(data.get("kidem_seviyesi", 3))
+        except Exception:
+            kidem_seviyesi = 3
+        if kidem_seviyesi not in (1, 2, 3):
+            kidem_seviyesi = 3
+
         cursor.execute(
             """
             SELECT ad, soyad, email, telefon, pozisyon_id, durum
@@ -241,10 +249,10 @@ def approve_candidate(aday_id: int):
         if pozisyon_id:
             cursor.execute(
                 """
-                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi)
-                VALUES (%s, %s, %s, 1)
+                INSERT INTO Personel_Pozisyon (personel_id, pozisyon_id, baslangic_tarihi, guncel_mi, kidem_seviyesi)
+                VALUES (%s, %s, %s, 1, %s)
                 """,
-                (personel_id, pozisyon_id, ise_giris_tarihi),
+                (personel_id, pozisyon_id, ise_giris_tarihi, kidem_seviyesi),
             )
 
         # Kullanıcı adı üret
