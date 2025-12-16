@@ -202,7 +202,7 @@ export default function Dashboard() {
       </div>
 
       {/* Alt bölüm: grafik + son duyurular + son adaylar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">
             İzin Durumu (Pasta Grafik)
