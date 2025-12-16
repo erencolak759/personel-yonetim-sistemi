@@ -107,6 +107,34 @@ export interface DashboardStats {
   izinli: number
   kalan_calisan: number
   bekleyen: number
+  odenen_maas: number
+  maas_butce_oran: number
+  personel_artis_oran: number
+}
+
+export interface Announcement {
+  duyuru_id: number
+  baslik: string
+  icerik: string
+  yayin_tarihi: string | null
+  bitis_tarihi: string | null
+  oncelik: string
+  aktif_mi: boolean
+  olusturan: string
+}
+
+export interface Candidate {
+  aday_id: number
+  ad: string
+  soyad: string
+  telefon: string | null
+  email: string | null
+  pozisyon_id: number
+  pozisyon_adi: string
+  basvuru_tarihi: string
+  gorusme_tarihi: string | null
+  durum: string
+  aciklama: string | null
 }
 
 export interface ApiResponse<T> {

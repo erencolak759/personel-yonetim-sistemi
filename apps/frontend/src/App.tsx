@@ -9,9 +9,12 @@ import AddEmployee from './pages/AddEmployee'
 import Attendance from './pages/Attendance'
 import Leaves from './pages/Leaves'
 import Salary from './pages/Salary'
+import Announcements from './pages/Announcements'
+import Candidates from './pages/Candidates'
 import Settings from './pages/Settings'
 import ChangePassword from './pages/ChangePassword'
-import Archive from './pages/Archive'
+import UserHome from './pages/UserDashboard'
+import UserPayroll from './pages/UserPayroll'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth()
@@ -53,7 +56,7 @@ function UserRoute({ children }: { children: React.ReactNode }) {
 function RoleRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" />
-  return user.rol === 'admin' ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/user/leaves" replace />
+  return user.rol === 'admin' ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/user/dashboard" replace />
 }
 
 function App() {
@@ -79,7 +82,8 @@ function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="salary" element={<Salary />} />
-          <Route path="archive" element={<Archive />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="candidates" element={<Candidates />} />
           <Route path="settings/*" element={<Settings />} />
         </Route>
 
@@ -93,12 +97,16 @@ function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Navigate to="/user/leaves" replace />} />
+          <Route index element={<Navigate to="/user/dashboard" replace />} />
+          <Route path="dashboard" element={<UserHome />} />
+          <Route path="payroll" element={<UserPayroll />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
         <Route path="/" element={<RoleRedirect />} />
+
+        {/* change-password should render without the main Layout/sidebar */}
         <Route
           path="/change-password"
           element={

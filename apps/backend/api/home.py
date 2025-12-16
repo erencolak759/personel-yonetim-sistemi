@@ -17,6 +17,9 @@ def dashboard():
     izinli_sayisi = 0
     toplam_personel = 0
     bekleyen_isler = 0
+    odenen_maas = 0.0
+    maas_butce_oran = 0.0
+    personel_artis_oran = 0.0
 
     try:
         cursor.execute("SELECT COUNT(*) as cnt FROM Devam WHERE tarih = %s AND durum = 'Izinli'", (bugun,))
@@ -33,6 +36,67 @@ def dashboard():
         row = cursor.fetchone()
         if row:
             bekleyen_isler = row['cnt']
+
+        # Aktif personeller için güncel net maaş toplamı
+        # - Her personel için en güncel Maas_Hesap kaydının net_maas'ı
+        # - Eğer hiç bordro yoksa ilgili pozisyonun taban_maas'ı kullanılır
+        cursor.execute(
+            """
+            WITH latest_payroll AS (
+                SELECT mh.personel_id,
+                       mh.net_maas,
+                       ROW_NUMBER() OVER (
+                         PARTITION BY mh.personel_id
+                         ORDER BY mh.donem_yil DESC, mh.donem_ay DESC, mh.maas_hesap_id DESC
+                       ) AS rn
+                FROM Maas_Hesap mh
+            )
+            SELECT COALESCE(SUM(COALESCE(lp.net_maas, poz.taban_maas, 0)), 0) AS toplam_net
+            FROM Personel p
+            LEFT JOIN latest_payroll lp
+              ON lp.personel_id = p.personel_id AND lp.rn = 1
+            LEFT JOIN Personel_Pozisyon pp
+              ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
+            LEFT JOIN Pozisyon poz
+              ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.aktif_mi = 1
+            """
+        )
+        row = cursor.fetchone()
+        odenen_maas = float(row.get("toplam_net", 0) or 0) if row else 0.0
+
+        # Aktif personel için teorik maaş bütçesi (taban maaşların toplamı)
+        cursor.execute(
+            """
+            SELECT COALESCE(SUM(poz.taban_maas), 0) AS butce
+            FROM Personel p
+            LEFT JOIN Personel_Pozisyon pp
+                ON p.personel_id = pp.personel_id AND pp.guncel_mi = 1
+            LEFT JOIN Pozisyon poz
+                ON pp.pozisyon_id = poz.pozisyon_id
+            WHERE p.aktif_mi = 1
+            """
+        )
+        row = cursor.fetchone()
+        butce = float(row.get("butce", 0) or 0) if row else 0.0
+        if butce > 0:
+            maas_butce_oran = round((odenen_maas / butce) * 100, 1)
+
+        # Son 30 güne göre personel artış oranı
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS cnt
+            FROM Personel
+            WHERE aktif_mi = 1
+              AND ise_giris_tarihi <= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            """
+        )
+        row = cursor.fetchone()
+        onceki_personel = int(row.get("cnt", 0) or 0) if row else 0
+        if onceki_personel > 0:
+            personel_artis_oran = round(
+                ((toplam_personel - onceki_personel) / onceki_personel) * 100, 1
+            )
 
         cursor.execute("""
             SELECT d.departman_adi, COUNT(p.personel_id) as sayi
@@ -82,6 +146,46 @@ def dashboard():
         """)
         son_aktiviteler = [{'tip': row['tip'], 'personel': row['personel'], 'aksiyon': row['aksiyon'], 'tarih': str(row['tarih'])} for row in cursor.fetchall()]
 
+        cursor.execute("""
+            SELECT d.duyuru_id,
+                   d.baslik,
+                   d.icerik,
+                   d.yayin_tarihi,
+                   d.oncelik
+            FROM Duyuru d
+            WHERE d.aktif_mi = 1
+            ORDER BY d.yayin_tarihi DESC
+            LIMIT 5
+        """)
+        duyurular = [{
+            'duyuru_id': row['duyuru_id'],
+            'baslik': row['baslik'],
+            'icerik': row['icerik'],
+            'yayin_tarihi': str(row['yayin_tarihi']) if row['yayin_tarihi'] else None,
+            'oncelik': row['oncelik'],
+        } for row in cursor.fetchall()]
+
+        cursor.execute("""
+            SELECT a.aday_id,
+                   a.ad,
+                   a.soyad,
+                   a.basvuru_tarihi,
+                   a.durum,
+                   p.pozisyon_adi
+            FROM Adaylar a
+            JOIN Pozisyon p ON a.pozisyon_id = p.pozisyon_id
+            ORDER BY a.basvuru_tarihi DESC, a.aday_id DESC
+            LIMIT 5
+        """)
+        adaylar = [{
+            'aday_id': row['aday_id'],
+            'ad': row['ad'],
+            'soyad': row['soyad'],
+            'basvuru_tarihi': str(row['basvuru_tarihi']) if row['basvuru_tarihi'] else None,
+            'durum': row['durum'],
+            'pozisyon_adi': row['pozisyon_adi'],
+        } for row in cursor.fetchall()]
+
     except Exception as e:
         print("Dashboard Hatası:", repr(e))
         departman_data = []
@@ -89,6 +193,8 @@ def dashboard():
         izin_stats = []
         maas_dept_data = []
         son_aktiviteler = []
+        duyurular = []
+        adaylar = []
 
     finally:
         conn.close()
@@ -98,11 +204,16 @@ def dashboard():
             'izinli': izinli_sayisi,
             'toplam': toplam_personel,
             'kalan_calisan': toplam_personel - izinli_sayisi,
-            'bekleyen': bekleyen_isler
+            'bekleyen': bekleyen_isler,
+            'odenen_maas': odenen_maas,
+            'maas_butce_oran': maas_butce_oran,
+            'personel_artis_oran': personel_artis_oran
         },
         'departman_data': departman_data,
         'devamsizlik_data': devamsizlik_data,
         'izin_stats': izin_stats,
         'maas_dept_data': maas_dept_data,
-        'son_aktiviteler': son_aktiviteler
+        'son_aktiviteler': son_aktiviteler,
+        'duyurular': duyurular,
+        'adaylar': adaylar
     })

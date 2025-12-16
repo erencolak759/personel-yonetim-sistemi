@@ -6,6 +6,8 @@ import {
   Calendar,
   Umbrella,
   Wallet,
+  Megaphone,
+  UserPlus,
   Settings,
   LogOut,
   Menu,
@@ -21,10 +23,14 @@ const adminNavigation = [
   { name: 'İzinler', href: '/admin/leaves', icon: Umbrella },
   { name: 'Maaşlar', href: '/admin/salary', icon: Wallet },
   { name: 'Arşiv', href: '/admin/archive', icon: Archive },
+  { name: 'Duyurular', href: '/admin/announcements', icon: Megaphone },
+  { name: 'Adaylar', href: '/admin/candidates', icon: UserPlus },
   { name: 'Ayarlar', href: '/admin/settings', icon: Settings },
 ]
 
 const userNavigation = [
+  { name: 'Ana Sayfa', href: '/user/dashboard', icon: LayoutDashboard },
+  { name: 'Bordro', href: '/user/payroll', icon: Wallet },
   { name: 'İzinler', href: '/user/leaves', icon: Umbrella },
   { name: 'Ayarlar', href: '/user/settings', icon: Settings },
 ]

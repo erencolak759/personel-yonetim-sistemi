@@ -1,0 +1,44 @@
+def secilen_projeleri_bul(t, k, T):
+    """
+    t: projelerin süreleri
+    k: projelerin kazançları
+    T: toplam süre kapasitesi
+    """
+
+    N = len(t)
+
+    dp = [[0] * (T + 1) for _ in range(N + 1)]
+
+    for i in range(1, N + 1):
+        for j in range(T + 1):
+            dp[i][j] = dp[i - 1][j]
+
+            if t[i - 1] <= j:
+                dp[i][j] = max(
+                    dp[i][j],
+                    k[i - 1] + dp[i - 1][j - t[i - 1]]
+                )
+
+    secilen_projeler = []
+    j = T
+    for i in range(N, 0, -1):
+        if dp[i][j] != dp[i - 1][j]:
+            secilen_projeler.append(i)   
+            j -= t[i - 1]
+
+    secilen_projeler.reverse()
+
+    return dp[N][T], secilen_projeler
+
+
+if __name__ == "__main__":
+
+    t = [2, 3, 4, 5]
+    k = [3, 4, 5, 6]
+
+    T = 5
+
+    maks_kazanc, secilen_projeler = secilen_projeleri_bul(t, k, T)
+
+    print(f"Maksimum Kazanç = {maks_kazanc}")
+    print(f"Seçilen Projeler = {', '.join(map(str, secilen_projeler))}")
