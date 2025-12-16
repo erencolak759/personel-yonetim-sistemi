@@ -33,7 +33,7 @@ export default function Login() {
         } else if (user.rol === 'admin') {
           navigate('/admin/dashboard')
         } else {
-          navigate('/user/leaves')
+          navigate('/user/dashboard')
         }
       } else {
         setError('Geçersiz kullanıcı adı veya şifre')

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file
 from utils.db import get_connection
 from utils.pdf_generator import PDFGenerator
-from api.auth import login_required, admin_required
+from api.auth import login_required, admin_required, decode_token
 import datetime
 import calendar
 from decimal import Decimal, ROUND_HALF_UP
@@ -15,6 +15,16 @@ INCOME_TAX_BANDS = [
     (Decimal('880000'), Decimal('0.35')),
     (Decimal('9999999999'), Decimal('0.40')),
 ]
+
+
+def _get_request_user():
+    """Decode JWT from Authorization header and return payload."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header.split(' ')[1]
+    return decode_token(token)
+
 
 def annual_income_tax(annual_taxable: Decimal) -> Decimal:
     tax = Decimal('0')
@@ -50,6 +60,11 @@ def salary_list():
     except Exception:
         aktif_flag = 1
 
+    user_data = _get_request_user() or {}
+    user_role = user_data.get('role')
+    current_personel_id = user_data.get('personel_id')
+    requested_personel_id = request.args.get('personel_id')
+
     try:
         sql = """
             SELECT mh.maas_hesap_id, mh.personel_id, mh.donem_yil, mh.donem_ay,
@@ -62,7 +77,18 @@ def salary_list():
             WHERE p.aktif_mi = %s
         """
         params = [aktif_flag]
-        
+
+        if user_role != 'admin':
+            # Çalışanlar sadece kendi bordrolarını görebilir
+            if not current_personel_id:
+                return jsonify({'error': 'Personel bilgisi bulunamadı'}), 400
+            sql += " AND mh.personel_id = %s"
+            params.append(current_personel_id)
+        elif requested_personel_id:
+            # Admin isterse belirli bir personeli filtreleyebilir
+            sql += " AND mh.personel_id = %s"
+            params.append(requested_personel_id)
+
         if yil:
             sql += " AND mh.donem_yil = %s"
             params.append(yil)

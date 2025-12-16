@@ -13,6 +13,8 @@ import Announcements from './pages/Announcements'
 import Candidates from './pages/Candidates'
 import Settings from './pages/Settings'
 import ChangePassword from './pages/ChangePassword'
+import UserHome from './pages/UserDashboard'
+import UserPayroll from './pages/UserPayroll'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth()
@@ -54,7 +56,7 @@ function UserRoute({ children }: { children: React.ReactNode }) {
 function RoleRedirect() {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" />
-  return user.rol === 'admin' ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/user/leaves" replace />
+  return user.rol === 'admin' ? <Navigate to="/admin/dashboard" replace /> : <Navigate to="/user/dashboard" replace />
 }
 
 function App() {
@@ -95,7 +97,9 @@ function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Navigate to="/user/leaves" replace />} />
+          <Route index element={<Navigate to="/user/dashboard" replace />} />
+          <Route path="dashboard" element={<UserHome />} />
+          <Route path="payroll" element={<UserPayroll />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="settings" element={<Settings />} />
         </Route>

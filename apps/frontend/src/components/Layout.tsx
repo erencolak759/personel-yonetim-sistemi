@@ -29,6 +29,8 @@ const adminNavigation = [
 ]
 
 const userNavigation = [
+  { name: 'Ana Sayfa', href: '/user/dashboard', icon: LayoutDashboard },
+  { name: 'Bordro', href: '/user/payroll', icon: Wallet },
   { name: 'İzinler', href: '/user/leaves', icon: Umbrella },
   { name: 'Ayarlar', href: '/user/settings', icon: Settings },
 ]
