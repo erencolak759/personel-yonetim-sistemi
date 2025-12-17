@@ -25,7 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.get('/auth/me')
       if (response.data.authenticated && response.data.user) {
-        setUser(response.data.user)
+        const u = response.data.user
+        setUser(u)
       } else {
         setUser(null)
       }
@@ -56,12 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.get('/auth/me')
       if (response.data.authenticated && response.data.user) {
-        setUser(response.data.user)
+        const u = response.data.user
+        setUser(u)
+        try {
+          sessionStorage.setItem('revealAllowed', u && u.ilk_giris ? 'true' : 'false')
+        } catch {}
       } else {
         setUser(null)
+        try {
+          sessionStorage.setItem('revealAllowed', 'false')
+        } catch {}
       }
     } catch {
       setUser(null)
+      try {
+        sessionStorage.setItem('revealAllowed', 'false')
+      } catch {}
     }
   }
 
@@ -70,6 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout')
     } finally {
       localStorage.removeItem('authToken')
+      try {
+        // once user logs out, disallow revealing passwords for subsequent logins
+        sessionStorage.setItem('revealAllowed', 'false')
+      } catch {}
       setUser(null)
     }
   }

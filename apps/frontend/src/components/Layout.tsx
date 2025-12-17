@@ -26,6 +26,7 @@ const adminNavigation = [
   { name: 'Maaşlar', href: '/admin/salary', icon: Wallet },
   { name: 'Duyurular', href: '/admin/announcements', icon: Megaphone },
   { name: 'Adaylar', href: '/admin/candidates', icon: UserPlus },
+  { name: 'Arşiv', href: '/admin/archive', icon: Archive },
   { name: 'Ayarlar', href: '/admin/settings', icon: Settings },
 ]
 

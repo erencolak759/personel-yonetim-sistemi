@@ -17,6 +17,7 @@ import UserHome from './pages/UserDashboard'
 import UserPayroll from './pages/UserPayroll'
 import Apply from './pages/Apply'
 import Users from './pages/Users'
+import Archive from './pages/Archive'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth()
@@ -83,6 +84,7 @@ function App() {
           <Route path="employees/add" element={<AddEmployee />} />
           <Route path="employees/:id" element={<EmployeeDetail />} />
           <Route path="users" element={<Users />} />
+          <Route path="archive" element={<Archive />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="leaves" element={<Leaves />} />
           <Route path="salary" element={<Salary />} />

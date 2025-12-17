@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -10,6 +11,7 @@ export default function ChangePassword() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { refresh, user } = useAuth()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -34,6 +36,23 @@ export default function ChangePassword() {
       }
       await refresh()
       const me = (await api.get('/auth/me')).data?.user
+      // remove any revealed password for this user (they changed their own password)
+      try {
+        const stored = sessionStorage.getItem('revealedPasswords')
+        if (stored) {
+          const map = JSON.parse(stored)
+          if (me?.kullanici_id && map[me.kullanici_id]) {
+            delete map[me.kullanici_id]
+            sessionStorage.setItem('revealedPasswords', JSON.stringify(map))
+          }
+        }
+        const visible = sessionStorage.getItem('revealedPasswordVisibleId')
+        if (visible && me?.kullanici_id && Number(visible) === me.kullanici_id) {
+          sessionStorage.removeItem('revealedPasswordVisibleId')
+        }
+      } catch {}
+      // invalidate users list so UI (eye disabled) updates
+      try { queryClient.invalidateQueries({ queryKey: ['users'] }) } catch {}
       if (me?.rol === 'admin') {
         navigate('/admin/dashboard')
       } else {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { KeyRound, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import api from '../lib/api'
@@ -17,6 +17,7 @@ type UserRow = {
   rol: string | null
   aktif_mi: number | boolean | null
   son_giris: string | null
+  ilk_giris?: number | boolean | null
 }
 
 function generatePassword(length = 10) {
@@ -55,11 +56,19 @@ export default function Users() {
     onMutate: (user) => setResettingId(user.kullanici_id || null),
     onSuccess: ({ user, password }) => {
       toast.success(`Şifre hazır (${user.kullanici_adi || user.ad}).`)
-      setRevealedPasswords((prev) =>
-        user.kullanici_id ? { ...prev, [user.kullanici_id]: password } : prev
-      )
+      // After admin reset, show the returned password immediately (backend sets ilk_giris=1)
+      setRevealedPasswords((prev) => {
+        const next = user.kullanici_id ? { ...prev, [user.kullanici_id]: password } : prev
+        try {
+          sessionStorage.setItem('revealedPasswords', JSON.stringify(next))
+        } catch {}
+        return next
+      })
       if (user.kullanici_id) {
         setShowPasswordId(user.kullanici_id)
+        try {
+          sessionStorage.setItem('revealedPasswordVisibleId', String(user.kullanici_id))
+        } catch {}
       }
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
@@ -70,6 +79,15 @@ export default function Users() {
   })
 
   const users = data || []
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('revealedPasswords')
+      if (stored) setRevealedPasswords(JSON.parse(stored))
+      const visible = sessionStorage.getItem('revealedPasswordVisibleId')
+      if (visible) setShowPasswordId(Number(visible))
+    } catch {}
+  }, [])
 
   if (isLoading) {
     return (
@@ -137,27 +155,54 @@ export default function Users() {
                   <td className="py-3 px-4 text-sm">
                     {u.kullanici_id ? (
                       <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-ghost px-2 py-1 text-xs inline-flex items-center gap-1"
-                          onClick={() => {
-                            if (!revealedPasswords[u.kullanici_id]) {
-                              resetMutation.mutate(u)
-                            } else {
-                              setShowPasswordId(
-                                showPasswordId === u.kullanici_id ? null : u.kullanici_id
-                              )
-                            }
-                          }}
-                          title="Şifreyi göster/gizle"
-                        >
-                          {showPasswordId === u.kullanici_id ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                        {showPasswordId === u.kullanici_id && revealedPasswords[u.kullanici_id] && (
-                          <span className="text-xs text-slate-700 bg-slate-100 rounded px-2 py-1">
-                            {revealedPasswords[u.kullanici_id]}
-                          </span>
-                        )}
+                        <div className="inline-flex items-center gap-2">
+                          {u.ilk_giris === 0 ? (
+                            <button
+                              type="button"
+                              className="btn btn-ghost px-2 py-1 text-xs inline-flex items-center gap-1 opacity-50 cursor-not-allowed"
+                              title="Kullanıcı şifresini güncellediği için görüntülenemez"
+                              disabled
+                            >
+                              <Eye size={14} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn btn-ghost px-2 py-1 text-xs inline-flex items-center gap-1"
+                              onClick={() => {
+                                const next = showPasswordId === u.kullanici_id ? null : u.kullanici_id
+                                setShowPasswordId(next)
+                                try {
+                                  if (next) sessionStorage.setItem('revealedPasswordVisibleId', String(next))
+                                  else sessionStorage.removeItem('revealedPasswordVisibleId')
+                                } catch {}
+                              }}
+                              title="Şifreyi göster/gizle"
+                            >
+                              {showPasswordId === u.kullanici_id ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="btn btn-ghost px-2 py-1 text-xs inline-flex items-center gap-1"
+                            onClick={() => resetMutation.mutate(u)}
+                            title="Şifreyi sıfırla"
+                            disabled={resettingId === u.kullanici_id}
+                          >
+                            {resettingId === u.kullanici_id ? (
+                              <RefreshCw size={14} className="animate-spin" />
+                            ) : (
+                              <KeyRound size={14} />
+                            )}
+                          </button>
+
+                          {showPasswordId === u.kullanici_id && revealedPasswords[u.kullanici_id] && (
+                            <span className="text-xs text-slate-700 bg-slate-100 rounded px-2 py-1">
+                              {revealedPasswords[u.kullanici_id]}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <span className="text-xs text-slate-400">Hesap yok</span>

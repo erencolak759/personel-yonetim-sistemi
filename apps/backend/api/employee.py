@@ -794,6 +794,14 @@ def employee_permanent_delete(personel_id):
         cursor.execute("DELETE FROM Izin_Kayit WHERE personel_id = %s", (personel_id,))
         cursor.execute("DELETE FROM Devam WHERE personel_id = %s", (personel_id,))
         cursor.execute("DELETE FROM Personel_Pozisyon WHERE personel_id = %s", (personel_id,))
+        # find any kullanıcı ids for this personel and remove related records that reference kullanici_id
+        cursor.execute("SELECT kullanici_id FROM Kullanici WHERE personel_id = %s", (personel_id,))
+        krows = cursor.fetchall()
+        kullanici_ids = [r['kullanici_id'] for r in krows if r.get('kullanici_id')]
+        if kullanici_ids:
+            # delete announcements created by these users
+            placeholders = ','.join(['%s'] * len(kullanici_ids))
+            cursor.execute(f"DELETE FROM Duyuru WHERE olusturan_kullanici_id IN ({placeholders})", tuple(kullanici_ids))
         cursor.execute("DELETE FROM Kullanici WHERE personel_id = %s", (personel_id,))
         cursor.execute("DELETE FROM Personel WHERE personel_id = %s", (personel_id,))
         

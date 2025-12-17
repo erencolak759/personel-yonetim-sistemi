@@ -241,7 +241,8 @@ def get_users():
                 k.email,
                 k.rol,
                 k.aktif_mi,
-                k.son_giris
+                k.son_giris,
+                k.ilk_giris
             FROM Personel p
             LEFT JOIN Kullanici k ON k.personel_id = p.personel_id
             LEFT JOIN Departman d ON p.departman_id = d.departman_id
@@ -268,6 +269,7 @@ def get_users():
             'rol': row.get('rol'),
             'aktif_mi': row.get('aktif_mi'),
             'son_giris': row.get('son_giris'),
+            'ilk_giris': row.get('ilk_giris'),
         } for row in rows]
         
         return jsonify(users)
@@ -339,6 +341,9 @@ def update_user(user_id):
             plain_password = data['sifre']
             updates.append("sifre_hash = %s")
             params.append(generate_password_hash(plain_password))
+            # when admin resets password, mark that user must perform first login
+            updates.append("ilk_giris = %s")
+            params.append(1)
         
         if not updates:
             return jsonify({'error': 'Güncellenecek alan bulunamadı'}), 400
