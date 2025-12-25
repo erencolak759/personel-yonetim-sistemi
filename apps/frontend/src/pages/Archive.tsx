@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/api'
 import { Archive as ArchiveIcon, Users, Calendar, Umbrella, Wallet, RotateCcw, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { SkeletonCard } from '../components/ui'
 
 interface ArchivedEmployee {
   personel_id: number
@@ -79,7 +80,7 @@ export default function Archive() {
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         {employeesQuery.isLoading ? (
-          <div className="p-8 text-center text-slate-500">Yükleniyor...</div>
+          <div className="p-8"><SkeletonCard className="h-48" /></div>
         ) : employeesQuery.data?.length === 0 ? (
           <div className="p-12 text-center">
             <ArchiveIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -89,7 +90,7 @@ export default function Archive() {
           <div className="divide-y divide-slate-200">
             {employeesQuery.data?.map((emp) => (
               <div key={emp.personel_id} className="group">
-                <div 
+                <div
                   className="flex items-center justify-between p-4 hover:bg-slate-50 cursor-pointer transition-colors"
                   onClick={() => handleExpand(emp.personel_id)}
                 >
@@ -134,10 +135,10 @@ export default function Archive() {
                   </div>
                 </div>
                 {expandedEmployee === emp.personel_id && (
-                  <EmployeeDetails 
-                    personelId={emp.personel_id} 
-                    tab={detailTab} 
-                    setTab={setDetailTab} 
+                  <EmployeeDetails
+                    personelId={emp.personel_id}
+                    tab={detailTab}
+                    setTab={setDetailTab}
                   />
                 )}
               </div>
@@ -155,7 +156,7 @@ export default function Archive() {
               <h3 className="text-lg font-semibold text-slate-800">Kalıcı Silme Onayı</h3>
             </div>
             <p className="text-slate-600 mb-6">
-              Bu personeli ve tüm kayıtlarını (yoklama, izin, maaş) kalıcı olarak silmek istediğinize emin misiniz? 
+              Bu personeli ve tüm kayıtlarını (yoklama, izin, maaş) kalıcı olarak silmek istediğinize emin misiniz?
               <strong className="text-red-600"> Bu işlem geri alınamaz!</strong>
             </p>
             <div className="flex gap-3 justify-end">
@@ -180,14 +181,14 @@ export default function Archive() {
   )
 }
 
-function EmployeeDetails({ 
-  personelId, 
-  tab, 
-  setTab 
-}: { 
+function EmployeeDetails({
+  personelId,
+  tab,
+  setTab
+}: {
   personelId: number
   tab: 'attendance' | 'leaves' | 'salary'
-  setTab: (tab: 'attendance' | 'leaves' | 'salary') => void 
+  setTab: (tab: 'attendance' | 'leaves' | 'salary') => void
 }) {
   const attendanceQuery = useQuery({
     queryKey: ['archive-attendance', personelId],
@@ -221,33 +222,30 @@ function EmployeeDetails({
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setTab('attendance')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'attendance' 
-              ? 'bg-primary-600 text-white' 
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'attendance'
+            ? 'bg-primary-600 text-white'
+            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
         >
           <Calendar size={16} />
           Yoklama
         </button>
         <button
           onClick={() => setTab('leaves')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'leaves' 
-              ? 'bg-primary-600 text-white' 
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'leaves'
+            ? 'bg-primary-600 text-white'
+            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
         >
           <Umbrella size={16} />
           İzinler
         </button>
         <button
           onClick={() => setTab('salary')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === 'salary' 
-              ? 'bg-primary-600 text-white' 
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'salary'
+            ? 'bg-primary-600 text-white'
+            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
         >
           <Wallet size={16} />
           Bordro
@@ -274,12 +272,11 @@ function EmployeeDetails({
                     <tr key={idx} className="text-sm">
                       <td className="px-4 py-3 text-slate-800">{a.tarih}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          a.durum === 'Normal' ? 'bg-green-100 text-green-700' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${a.durum === 'Normal' ? 'bg-green-100 text-green-700' :
                           a.durum === 'Izinli' ? 'bg-blue-100 text-blue-700' :
-                          a.durum === 'Devamsiz' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
+                            a.durum === 'Devamsiz' ? 'bg-red-100 text-red-700' :
+                              'bg-slate-100 text-slate-700'
+                          }`}>
                           {a.durum}
                         </span>
                       </td>
@@ -322,11 +319,10 @@ function EmployeeDetails({
                       <td className="px-4 py-3 text-slate-600">{l.bitis_tarihi}</td>
                       <td className="px-4 py-3 text-slate-600">{l.gun_sayisi}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          l.onay_durumu === 'Onaylandi' ? 'bg-green-100 text-green-700' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${l.onay_durumu === 'Onaylandi' ? 'bg-green-100 text-green-700' :
                           l.onay_durumu === 'Reddedildi' ? 'bg-red-100 text-red-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
+                            'bg-amber-100 text-amber-700'
+                          }`}>
                           {l.onay_durumu}
                         </span>
                       </td>
@@ -363,9 +359,8 @@ function EmployeeDetails({
                       <td className="px-4 py-3 text-red-600">-{Number(s.toplam_kesinti).toLocaleString('tr-TR')} ₺</td>
                       <td className="px-4 py-3 text-green-600 font-medium">{Number(s.net_maas).toLocaleString('tr-TR')} ₺</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          s.odendi_mi ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${s.odendi_mi ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
                           {s.odendi_mi ? 'Ödendi' : 'Bekliyor'}
                         </span>
                       </td>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Wallet, CalendarClock } from 'lucide-react'
 import api from '../lib/api'
 import type { Salary } from '../types'
+import { SkeletonCard, SkeletonTable } from '../components/ui'
 
 const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 
@@ -37,8 +38,13 @@ export default function UserPayroll() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Bordro</h1>
+          <p className="text-slate-500 mt-1">Yükleniyor...</p>
+        </div>
+        <SkeletonCard className="h-48" />
+        <SkeletonTable rows={5} columns={3} />
       </div>
     )
   }
@@ -75,9 +81,8 @@ export default function UserPayroll() {
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <p className="text-sm text-slate-500">Durum</p>
               <span
-                className={`inline-flex mt-1 items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                  latestSalary.odendi_mi ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                }`}
+                className={`inline-flex mt-1 items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${latestSalary.odendi_mi ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                  }`}
               >
                 <CalendarClock size={16} />
                 {latestSalary.odendi_mi ? 'Ödendi' : 'Ödeme Bekliyor'}

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 import type { Salary as SalaryType } from '../types'
 import PayrollPreview from '../components/PayrollPreview'
+import { SkeletonTable } from '../components/ui'
 
 export default function Salary() {
   const { data, isLoading } = useQuery<{ maaslar: SalaryType[] }>({
@@ -58,8 +59,14 @@ export default function Salary() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Maaş Bordrosu</h1>
+            <p className="text-slate-500 mt-1">Yükleniyor...</p>
+          </div>
+        </div>
+        <SkeletonTable rows={6} columns={6} />
       </div>
     )
   }
@@ -78,20 +85,20 @@ export default function Salary() {
             onChange={(e) => setPeriod(e.target.value)}
             className="input"
           />
-            <button
-              type="button"
-              onClick={() => {
-                const [y, m] = period.split('-').map(Number)
-                generateMutation.mutate({ yil: y, ay: m })
-              }}
-              disabled={generateMutation.isPending}
-              className="btn btn-primary inline-flex w-auto items-center gap-2 h-10 px-4 transition-all duration-150"
-              >
+          <button
+            type="button"
+            onClick={() => {
+              const [y, m] = period.split('-').map(Number)
+              generateMutation.mutate({ yil: y, ay: m })
+            }}
+            disabled={generateMutation.isPending}
+            className="btn btn-primary inline-flex w-auto items-center gap-2 h-10 px-4 transition-all duration-150"
+          >
             <Wallet size={18} />
             <span className="whitespace-nowrap">
               {generateMutation.isPending ? 'Oluşturuluyor...' : 'Bordro Oluştur'}
             </span>
-            </button>
+          </button>
           <button
             type="button"
             onClick={async () => {
@@ -102,7 +109,7 @@ export default function Salary() {
                 setPreview(res.data?.previews || null)
               } catch (err: any) {
                 toast.error(err?.response?.data?.error || 'Önizleme hatası')
-              } 
+              }
               finally {
                 setPreviewLoading(false)
               }
@@ -133,7 +140,6 @@ export default function Salary() {
                 <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Eklemeler</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Kesintiler</th>
                 <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Net Ödenen</th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-slate-600">Durum</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -168,15 +174,6 @@ export default function Salary() {
                   </td>
                   <td className="py-4 px-6 font-bold text-lg text-slate-900">
                     {salary.net_maas.toLocaleString('tr-TR')} ₺
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`badge ${
-                        salary.odendi_mi ? 'badge-success' : 'badge-warning'
-                      }`}
-                    >
-                      {salary.odendi_mi ? 'Ödendi' : 'Bekliyor'}
-                    </span>
                   </td>
                 </tr>
               ))}

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Megaphone, Info, Clock3, TrendingUp } from 'lucide-react'
 import api from '../lib/api'
 import type { Announcement, Salary } from '../types'
+import { SkeletonCard } from '../components/ui'
 
 export default function UserHome() {
   const {
@@ -28,8 +29,18 @@ export default function UserHome() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Hoş geldiniz</h1>
+          <p className="text-slate-500 mt-1">Yükleniyor...</p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <SkeletonCard className="h-64" />
+            <SkeletonCard className="h-64" />
+          </div>
+          <SkeletonCard className="h-48" />
+        </div>
       </div>
     )
   }
@@ -60,13 +71,12 @@ export default function UserHome() {
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-slate-900 line-clamp-1">{ann.baslik}</p>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          ann.oncelik === 'Yuksek'
-                            ? 'bg-red-100 text-red-700'
-                            : ann.oncelik === 'Dusuk'
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${ann.oncelik === 'Yuksek'
+                          ? 'bg-red-100 text-red-700'
+                          : ann.oncelik === 'Dusuk'
                             ? 'bg-slate-100 text-slate-700'
                             : 'bg-amber-100 text-amber-700'
-                        }`}
+                          }`}
                       >
                         {ann.oncelik}
                       </span>

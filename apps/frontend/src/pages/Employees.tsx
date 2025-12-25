@@ -14,6 +14,7 @@ import {
 import api from '../lib/api'
 import toast from 'react-hot-toast'
 import type { Employee, Department, Position } from '../types'
+import { Avatar, SkeletonTable } from '../components/ui'
 
 export default function Employees() {
   const queryClient = useQueryClient()
@@ -98,15 +99,21 @@ export default function Employees() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Personel Listesi</h1>
+            <p className="text-slate-500 mt-1">Yükleniyor...</p>
+          </div>
+        </div>
+        <SkeletonTable rows={8} columns={7} />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Personel Listesi</h1>
@@ -124,19 +131,19 @@ export default function Employees() {
             </button>
           </div>
           <div className="flex gap-2">
-          <button onClick={downloadEmployeeListPdf} className="btn btn-outline">
-            <FileDown size={18} />
-            PDF İndir
-          </button>
-          <Link to="/admin/employees/add" className="btn btn-primary">
-            <Plus size={18} />
-            Yeni Personel
-          </Link>
+            <button onClick={downloadEmployeeListPdf} className="btn btn-outline">
+              <FileDown size={18} />
+              PDF İndir
+            </button>
+            <Link to="/admin/employees/add" className="btn btn-primary">
+              <Plus size={18} />
+              Yeni Personel
+            </Link>
           </div>
         </div>
       </div>
 
-      
+
       <div className="card p-4">
         <div className="relative">
           <Search
@@ -153,7 +160,7 @@ export default function Employees() {
         </div>
       </div>
 
-      
+
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -193,9 +200,7 @@ export default function Employees() {
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
-                        {employee.ad[0]}
-                      </div>
+                      <Avatar name={`${employee.ad} ${employee.soyad}`} size="md" />
                       <span className="font-medium text-slate-900">
                         {employee.ad} {employee.soyad}
                       </span>
@@ -276,7 +281,7 @@ export default function Employees() {
         )}
       </div>
 
-      
+
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
@@ -296,8 +301,8 @@ export default function Employees() {
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600"></div>
               </div>
             ) : (
-            <form
-              onSubmit={(e) => {
+              <form
+                onSubmit={(e) => {
                   e.preventDefault()
                   const formData = new FormData(e.currentTarget)
                   const personelData: any = Object.fromEntries(formData as any)
@@ -307,179 +312,178 @@ export default function Employees() {
 
                   editMutation.mutate(personelData)
                 }}
-              className="p-6 space-y-4 overflow-y-auto"
-            >
-              <div>
-                <label className="label">Ad</label>
-                <input
-                  name="ad"
-                  defaultValue={editModal.ad}
-                  className="input"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Soyad</label>
-                <input
-                  name="soyad"
-                  defaultValue={editModal.soyad}
-                  className="input"
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">TC Kimlik No</label>
-                <input
-                  name="tc_kimlik_no"
-                  defaultValue={editModal.tc_kimlik_no}
-                  className="input"
-                  maxLength={11}
-                  required
-                />
-              </div>
-              <div>
-                <label className="label">Telefon</label>
-                <input
-                  name="telefon"
-                  defaultValue={editModal.telefon || ''}
-                  className="input"
-                />
-              </div>
-              <div>
-                <label className="label">Email</label>
-                <input
-                  name="email"
-                  type="email"
-                  defaultValue={editModal.email || ''}
-                  className="input"
-                />
-              </div>
-              <div className="border-t border-slate-200 pt-4 mt-2">
-                <h4 className="text-sm font-semibold text-slate-900 mb-2">Departman & Maaş</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="label">Departman</label>
-                    <select
-                      name="departman_id"
-                      defaultValue={String((editModal as any).departman_id ?? '')}
-                      className="input"
-                    >
-                      <option value="">Seçiniz...</option>
-                      {formData?.departmanlar?.map((d) => (
-                        <option key={d.departman_id ?? d.id} value={d.departman_id ?? d.id}>
-                          {d.departman_adi ?? d.ad}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Pozisyon</label>
-                    <select
-                      name="pozisyon_id"
-                      className="input"
-                      value={selectedPozisyonId}
-                      onChange={(e) => setSelectedPozisyonId(e.target.value)}
-                    >
-                      <option value="">Seçiniz...</option>
-                      {formData?.pozisyonlar?.map((p) => (
-                        <option key={p.pozisyon_id ?? p.id} value={String(p.pozisyon_id ?? p.id)}>
-                          {(p.pozisyon_adi ?? p.ad) || 'Pozisyon'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label">Kıdem</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map((k) => (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => setSelectedKidem(k)}
-                          className={`px-2 py-1 rounded-lg text-xs border ${
-                            selectedKidem === k
+                className="p-6 space-y-4 overflow-y-auto"
+              >
+                <div>
+                  <label className="label">Ad</label>
+                  <input
+                    name="ad"
+                    defaultValue={editModal.ad}
+                    className="input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">Soyad</label>
+                  <input
+                    name="soyad"
+                    defaultValue={editModal.soyad}
+                    className="input"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">TC Kimlik No</label>
+                  <input
+                    name="tc_kimlik_no"
+                    defaultValue={editModal.tc_kimlik_no}
+                    className="input"
+                    maxLength={11}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">Telefon</label>
+                  <input
+                    name="telefon"
+                    defaultValue={editModal.telefon || ''}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    defaultValue={editModal.email || ''}
+                    className="input"
+                  />
+                </div>
+                <div className="border-t border-slate-200 pt-4 mt-2">
+                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Departman & Maaş</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="label">Departman</label>
+                      <select
+                        name="departman_id"
+                        defaultValue={String((editModal as any).departman_id ?? '')}
+                        className="input"
+                      >
+                        <option value="">Seçiniz...</option>
+                        {formData?.departmanlar?.map((d) => (
+                          <option key={d.departman_id ?? d.id} value={d.departman_id ?? d.id}>
+                            {d.departman_adi ?? d.ad}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Pozisyon</label>
+                      <select
+                        name="pozisyon_id"
+                        className="input"
+                        value={selectedPozisyonId}
+                        onChange={(e) => setSelectedPozisyonId(e.target.value)}
+                      >
+                        <option value="">Seçiniz...</option>
+                        {formData?.pozisyonlar?.map((p) => (
+                          <option key={p.pozisyon_id ?? p.id} value={String(p.pozisyon_id ?? p.id)}>
+                            {(p.pozisyon_adi ?? p.ad) || 'Pozisyon'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Kıdem</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 2, 3].map((k) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setSelectedKidem(k)}
+                            className={`px-2 py-1 rounded-lg text-xs border ${selectedKidem === k
                               ? 'border-primary-500 bg-primary-50 text-primary-700'
                               : 'border-slate-200 text-slate-600 hover:border-primary-300'
-                          }`}
-                        >
-                          Kıdem {k}
-                        </button>
-                      ))}
+                              }`}
+                          >
+                            Kıdem {k}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="label">Özel Maaş (opsiyonel)</label>
+                      <input
+                        type="number"
+                        name="ozel_taban_maas"
+                        value={manualSalary}
+                        onChange={(e) => setManualSalary(e.target.value)}
+                        className="input"
+                        placeholder="Örneğin 55000"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Dolu ise bu tutar kullanılacak, boş bırakılırsa kıdem formülüne göre maaş
+                        hesaplanır.
+                      </p>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      <span className="font-medium text-slate-700">Maaş Önizleme: </span>
+                      {(() => {
+                        const p = formData?.pozisyonlar?.find(
+                          (x) => String(x.pozisyon_id ?? x.id) === selectedPozisyonId,
+                        )
+                        const base = p?.taban_maas ?? 0
+                        const diff = (selectedKidem - 1) * 15000
+                        const auto = base + diff
+                        const effective = manualSalary ? Number(manualSalary) : auto
+                        if (!effective) return '-'
+                        if (manualSalary) {
+                          return `${effective.toLocaleString('tr-TR')} ₺ (Özel maaş)`
+                        }
+                        return `${effective.toLocaleString('tr-TR')} ₺ (Taban ${base.toLocaleString(
+                          'tr-TR',
+                        )} ₺ + ${diff.toLocaleString('tr-TR')} ₺)`
+                      })()}
                     </div>
                   </div>
-                  <div>
-                    <label className="label">Özel Maaş (opsiyonel)</label>
-                    <input
-                      type="number"
-                      name="ozel_taban_maas"
-                      value={manualSalary}
-                      onChange={(e) => setManualSalary(e.target.value)}
-                      className="input"
-                      placeholder="Örneğin 55000"
-                    />
-                    <p className="mt-1 text-xs text-slate-500">
-                      Dolu ise bu tutar kullanılacak, boş bırakılırsa kıdem formülüne göre maaş
-                      hesaplanır.
-                    </p>
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    <span className="font-medium text-slate-700">Maaş Önizleme: </span>
-                    {(() => {
-                      const p = formData?.pozisyonlar?.find(
-                        (x) => String(x.pozisyon_id ?? x.id) === selectedPozisyonId,
-                      )
-                      const base = p?.taban_maas ?? 0
-                      const diff = (selectedKidem - 1) * 15000
-                      const auto = base + diff
-                      const effective = manualSalary ? Number(manualSalary) : auto
-                      if (!effective) return '-'
-                      if (manualSalary) {
-                        return `${effective.toLocaleString('tr-TR')} ₺ (Özel maaş)`
-                      }
-                      return `${effective.toLocaleString('tr-TR')} ₺ (Taban ${base.toLocaleString(
-                        'tr-TR',
-                      )} ₺ + ${diff.toLocaleString('tr-TR')} ₺)`
-                    })()}
-                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="label">Doğum Tarihi</label>
-                <input
-                  name="dogum_tarihi"
-                  type="date"
-                  defaultValue={
-                    editModal.dogum_tarihi
-                      ? new Date(editModal.dogum_tarihi).toISOString().split('T')[0]
-                      : ''
-                  }
-                  className="input"
-                  required
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditModal(null)}
-                  className="btn btn-secondary flex-1"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={editMutation.isPending}
-                  className="btn btn-primary flex-1"
-                >
-                  {editMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="label">Doğum Tarihi</label>
+                  <input
+                    name="dogum_tarihi"
+                    type="date"
+                    defaultValue={
+                      editModal.dogum_tarihi
+                        ? new Date(editModal.dogum_tarihi).toISOString().split('T')[0]
+                        : ''
+                    }
+                    className="input"
+                    required
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditModal(null)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editMutation.isPending}
+                    className="btn btn-primary flex-1"
+                  >
+                    {editMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>
       )}
 
-      
+
       {deleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">

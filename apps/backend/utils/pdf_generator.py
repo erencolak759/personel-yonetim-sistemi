@@ -375,7 +375,7 @@ class PDFGenerator:
         title = Paragraph(title_text, self.title_style)
         elements.append(title)
         elements.append(Spacer(1, 0.5 * cm))
-        data = [['Personel', 'Departman', 'Brüt', 'Eklemeler', 'Kesintiler', 'Net', 'Durum']]
+        data = [['Personel', 'Departman', 'Brüt', 'Eklemeler', 'Kesintiler', 'Net']]
 
         for m in maaslar:
             durum = 'Ödendi' if m.get('odendi_mi') else 'Bekliyor'
@@ -386,7 +386,6 @@ class PDFGenerator:
                 f"+{m.get('toplam_ekleme', 0):,.2f} ₺",
                 f"-{m.get('toplam_kesinti', 0):,.2f} ₺",
                 f"{m.get('net_maas', 0):,.2f} ₺",
-                durum,
             ])
 
         table = Table(data, colWidths=[6 * cm, 4 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm, 3 * cm])

@@ -5,6 +5,7 @@ import api from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import type { Leave, Employee, LeaveType } from '../types'
+import { SkeletonTable } from '../components/ui'
 
 type FilterType = 'tumunu' | 'bekleyen' | 'onaylanan' | 'reddedilen'
 
@@ -109,8 +110,14 @@ export default function Leaves() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">İzin Yönetimi</h1>
+            <p className="text-slate-500 mt-1">Yükleniyor...</p>
+          </div>
+        </div>
+        <SkeletonTable rows={8} columns={6} />
       </div>
     )
   }
@@ -132,7 +139,7 @@ export default function Leaves() {
               setFormBaslangic('')
               setFormBitis('')
               setFormGunSayisi('')
-                setFormUcretli(null)
+              setFormUcretli(null)
               setShowAddModal(true)
             }}
             className="btn btn-primary"
@@ -218,53 +225,52 @@ export default function Leaves() {
                   </td>
                   <td className="py-4 px-6">
                     <span
-                      className={`badge ${
-                        leave.onay_durumu === 'Onaylandi'
-                          ? 'badge-success'
-                          : leave.onay_durumu === 'Reddedildi'
+                      className={`badge ${leave.onay_durumu === 'Onaylandi'
+                        ? 'badge-success'
+                        : leave.onay_durumu === 'Reddedildi'
                           ? 'badge-danger'
                           : 'badge-warning'
-                      }`}
+                        }`}
                     >
                       {leave.onay_durumu === 'Onaylandi'
                         ? 'Onaylandı'
                         : leave.onay_durumu === 'Reddedildi'
-                        ? 'Reddedildi'
-                        : 'Beklemede'}
+                          ? 'Reddedildi'
+                          : 'Beklemede'}
                     </span>
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex justify-end gap-2">
-                              {user?.rol === 'admin' && leave.onay_durumu === 'Beklemede' && (
-                            <>
-                              <button
-                                onClick={() => approveMutation.mutate(leave.izin_kayit_id)}
-                                className="btn btn-success text-sm py-1.5 px-3"
-                                disabled={approveMutation.isPending}
-                              >
-                                <Check size={14} />
-                                Onayla
-                              </button>
-                              <button
-                                onClick={() => rejectMutation.mutate(leave.izin_kayit_id)}
-                                className="btn btn-danger text-sm py-1.5 px-3"
-                                disabled={rejectMutation.isPending}
-                              >
-                                <X size={14} />
-                                Reddet
-                              </button>
-                            </>
-                          )}
-                              {(leave.onay_durumu === 'Beklemede' && (user?.rol === 'admin' || String(leave.personel_id) === String(user?.personel_id))) && (
-                                <button
-                                  type="button"
-                                  onClick={() => cancelMutation.mutate(leave.izin_kayit_id)}
-                                  className="btn btn-secondary text-sm py-1.5 px-3"
-                                  disabled={cancelMutation.isPending}
-                                >
-                                  İptal Et
-                                </button>
-                              )}
+                      {user?.rol === 'admin' && leave.onay_durumu === 'Beklemede' && (
+                        <>
+                          <button
+                            onClick={() => approveMutation.mutate(leave.izin_kayit_id)}
+                            className="btn btn-success text-sm py-1.5 px-3"
+                            disabled={approveMutation.isPending}
+                          >
+                            <Check size={14} />
+                            Onayla
+                          </button>
+                          <button
+                            onClick={() => rejectMutation.mutate(leave.izin_kayit_id)}
+                            className="btn btn-danger text-sm py-1.5 px-3"
+                            disabled={rejectMutation.isPending}
+                          >
+                            <X size={14} />
+                            Reddet
+                          </button>
+                        </>
+                      )}
+                      {(leave.onay_durumu === 'Beklemede' && (user?.rol === 'admin' || String(leave.personel_id) === String(user?.personel_id))) && (
+                        <button
+                          type="button"
+                          onClick={() => cancelMutation.mutate(leave.izin_kayit_id)}
+                          className="btn btn-secondary text-sm py-1.5 px-3"
+                          disabled={cancelMutation.isPending}
+                        >
+                          İptal Et
+                        </button>
+                      )}
                       {leave.onay_durumu !== 'Beklemede' && (
                         <span className="text-sm text-slate-400">İşlem Tamamlandı</span>
                       )}
@@ -283,10 +289,10 @@ export default function Leaves() {
               {filter === 'bekleyen'
                 ? 'Bekleyen izin talebi yok'
                 : filter === 'onaylanan'
-                ? 'Onaylanmış izin kaydı yok'
-                : filter === 'reddedilen'
-                ? 'Reddedilmiş izin kaydı yok'
-                : 'Henüz izin kaydı yok'}
+                  ? 'Onaylanmış izin kaydı yok'
+                  : filter === 'reddedilen'
+                    ? 'Reddedilmiş izin kaydı yok'
+                    : 'Henüz izin kaydı yok'}
             </p>
           </div>
         )}
@@ -404,7 +410,7 @@ export default function Leaves() {
                       if (formBitis) {
                         const s = new Date(e.target.value)
                         const b = new Date(formBitis)
-                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000*60*60*24)) + 1)
+                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1)
                         setFormGunSayisi(delta)
                       }
                     }}
@@ -423,7 +429,7 @@ export default function Leaves() {
                       if (formBaslangic) {
                         const s = new Date(formBaslangic)
                         const b = new Date(e.target.value)
-                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000*60*60*24)) + 1)
+                        const delta = Math.max(1, Math.floor((b.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1)
                         setFormGunSayisi(delta)
                       }
                     }}
@@ -478,10 +484,10 @@ function FilterButton({ active, onClick, label, icon, color }: FilterButtonProps
     ? color === 'warning'
       ? 'bg-amber-500 text-white'
       : color === 'success'
-      ? 'bg-emerald-500 text-white'
-      : color === 'danger'
-      ? 'bg-red-500 text-white'
-      : 'bg-primary-600 text-white'
+        ? 'bg-emerald-500 text-white'
+        : color === 'danger'
+          ? 'bg-red-500 text-white'
+          : 'bg-primary-600 text-white'
     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
 
   return (

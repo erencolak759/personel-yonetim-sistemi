@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 export default function Profile() {
-  const { user, refresh } = useAuth()
+  const { refresh } = useAuth()
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ ad: '', soyad: '', telefon: '', email: '', adres: '', dogum_tarihi: '' })
 

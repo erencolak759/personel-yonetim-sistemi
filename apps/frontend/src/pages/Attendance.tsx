@@ -4,6 +4,7 @@ import { Calendar, Check, X, Umbrella, Save } from 'lucide-react'
 import api from '../lib/api'
 import toast from 'react-hot-toast'
 import type { AttendanceRecord } from '../types'
+import { SkeletonTable, Avatar } from '../components/ui'
 
 export default function Attendance() {
   const queryClient = useQueryClient()
@@ -63,8 +64,14 @@ export default function Attendance() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Günlük Yoklama</h1>
+            <p className="text-slate-500 mt-1">Yükleniyor...</p>
+          </div>
+        </div>
+        <SkeletonTable rows={8} columns={4} />
       </div>
     )
   }
@@ -118,9 +125,7 @@ export default function Attendance() {
                 <tr key={emp.personel_id} className="hover:bg-slate-50">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-semibold">
-                        {emp.ad[0]}
-                      </div>
+                      <Avatar name={`${emp.ad} ${emp.soyad}`} size="md" />
                       <div>
                         <p className="font-medium text-slate-900">
                           {emp.ad} {emp.soyad}

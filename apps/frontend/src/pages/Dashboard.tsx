@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { Users, Umbrella, Wallet, Clock, ArrowUp, ArrowDown, Megaphone, UserPlus } from 'lucide-react'
+import { Users, Umbrella, Wallet, Clock, ArrowUp, ArrowDown, Megaphone, UserPlus, LucideIcon } from 'lucide-react'
 import { Chart } from 'react-google-charts'
 import api from '../lib/api'
 import type { DashboardStats } from '../types'
+import { SkeletonStatCard, SkeletonCard } from '../components/ui'
 
 interface DashboardData {
   stats: DashboardStats
@@ -27,8 +28,19 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 mt-1">Hoş geldiniz! İşte günlük özet.</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SkeletonCard className="h-64" />
+          <SkeletonCard className="h-64" />
+        </div>
+        <SkeletonCard className="h-72" />
       </div>
     )
   }
@@ -49,13 +61,13 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
         <p className="text-slate-500 mt-1">Hoş geldiniz! İşte günlük özet.</p>
       </div>
 
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Toplam Personel"
@@ -88,9 +100,9 @@ export default function Dashboard() {
         />
       </div>
 
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">
             Departman Dağılımı
@@ -124,7 +136,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        
+
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-slate-900 mb-4">
             İzin Durumları
@@ -263,29 +275,28 @@ export default function Dashboard() {
             <Megaphone size={18} className="text-primary-600" />
             Son Duyurular
           </h3>
-              <div className="space-y-3">
-                {data?.duyurular?.map((d) => (
-                  <div key={d.duyuru_id} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-slate-900 line-clamp-1">{d.baslik}</p>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                          d.oncelik === 'Yuksek'
-                            ? 'bg-red-100 text-red-700'
-                            : d.oncelik === 'Dusuk'
-                            ? 'bg-slate-100 text-slate-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}
-                      >
-                        {d.oncelik}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1 line-clamp-2">{d.icerik}</p>
-                    {d.yayin_tarihi && (
-                      <p className="text-[11px] text-slate-400 mt-1">{d.yayin_tarihi}</p>
-                    )}
-                  </div>
-                ))}
+          <div className="space-y-3">
+            {data?.duyurular?.map((d) => (
+              <div key={d.duyuru_id} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-slate-900 line-clamp-1">{d.baslik}</p>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${d.oncelik === 'Yuksek'
+                      ? 'bg-red-100 text-red-700'
+                      : d.oncelik === 'Dusuk'
+                        ? 'bg-slate-100 text-slate-700'
+                        : 'bg-amber-100 text-amber-700'
+                      }`}
+                  >
+                    {d.oncelik}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1 line-clamp-2">{d.icerik}</p>
+                {d.yayin_tarihi && (
+                  <p className="text-[11px] text-slate-400 mt-1">{d.yayin_tarihi}</p>
+                )}
+              </div>
+            ))}
             {(!data?.duyurular || data.duyurular.length === 0) && (
               <p className="text-slate-500 text-sm text-center py-4">
                 Henüz duyuru bulunmuyor
@@ -332,7 +343,7 @@ export default function Dashboard() {
 interface StatCardProps {
   title: string
   value: string | number
-  icon: React.ComponentType<{ size?: number; className?: string }>
+  icon: LucideIcon
   trend?: string
   trendUp?: boolean
   subtitle?: string
